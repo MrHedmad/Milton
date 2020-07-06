@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+### >>>> Module Specific <<<< ###
+
+# Ignore Log files
+milton/logs/
+
+# Ignore custom configs
+config.yaml
+config.yml
+
+# Ignore vscode settings
+.vscode
