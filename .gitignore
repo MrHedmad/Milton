@@ -139,3 +139,12 @@ config.yml
 
 # Ignore vscode settings
 .vscode
+
+# Place still-in-progress things here
+Dockerfile
+
+# ignore production tests
+test.py
+
+# Ignore pipenv locks
+Pipfile.lock

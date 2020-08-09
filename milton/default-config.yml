@@ -1,9 +1,8 @@
-# DEFAULT OPTION FILE FOR MILTON DO NOT MODIFY THIS DIRECTLY 
-# Create an options.yml in the ./code folder 
+# DEFAULT OPTION FILE FOR MILTON - !! DO NOT MODIFY THIS DIRECTLY !!
+# Create an options.yml in the top-level folder (e.g. `./Milton/`)
 # and override options in that file instead.
 
-# All paths can be given relative to this folder.
-
+# All paths can be given relative to the top-level folder (i.e. `./Milton/`).
 
 # Options related to the bot.
 bot:
@@ -11,29 +10,33 @@ bot:
   token: null
   # >> The ID of the owner of the bot.
   owner_id: null
+  # >> Timeout for listening to pagination instructions (seconds)
+  pagination_timeout: 300
 
-# >> Set the path for the SQLite database.
-database_path: "./memory/mla.db"
+database:
+  path: "./resources/data.json"
 
 # >> Set the path for the logs.
 # Additional logs are created alongside the main one during runtime.
 logs:
   path: "./logs/mla.log"
   # Levels can be 50 - CRITICAL, 40 - ERROR, 30 - WARNING, 20 - INFO,
-  # 10 - DEBUG or some other int
+  # 10 - DEBUG or some other int. Log messages of level equal or above the
+  # specified will be logged.
   file_level: 20
   stdout_level: 30
 
-# Set the bot command prefixes.
+# >> Set the bot command prefixes.
 prefixes:
   # >> The guild prefix is used for commands sent in a server
   guild:  "$"
-  # The direct prefix is used for commands sent in a private messages
-  direct: ""
 
 # >> Emojis
 emojis:
-  trash: ":x:"
-  next: ":arrow_forward:"
-  back: ":arrow_backward:"
-
+  # Pagination Emojis
+  trash: "\u274c"  # :x:
+  next:  "\u25b6"  # :arrow_forward:
+  back:  "\u25c0"  # :arrow_backward:
+  last:  "\u23e9"  # :fast_forward:
+  first: "\u23ea"  # :rewind:
+  stop:  ⏹️  # :stop:

@@ -1,10 +1,14 @@
 import logging
-from logging.handlers import RotatingFileHandler
-from logging import StreamHandler
-from pathlib import Path
 import os
+from logging import StreamHandler
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 from milton.config import CONFIG
+
+# Set milton's version
+
+__version__ = "0.0.1"
 
 # Setup logging
 log = logging.getLogger("milton")  # Keep this at the module level name

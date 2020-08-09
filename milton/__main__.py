@@ -1,27 +1,37 @@
-import discord
-from discord.abc import PrivateChannel
-from discord.ext.commands import when_mentioned_or
+import logging
 
-from milton.bot import Bot
+import discord
+
+from milton.bot import _get_prefix
+from milton.bot import Milton
 from milton.config import CONFIG
 
+log = logging.getLogger(__name__)
 
-async def _get_prefix(bot, message):
-    """Retrieve the prefix for this context"""
-    if isinstance(message.channel, PrivateChannel):
-        return when_mentioned_or(CONFIG.prefixes.direct)(bot, message)
-    return when_mentioned_or(CONFIG.prefixes.guild)(bot, message)
+log.debug("Making the Milton Bot instance")
 
-
-milton = Bot(
+milton = Milton(
     config=CONFIG,
     command_prefix=_get_prefix,
     activity=discord.Game(name="with " + CONFIG.prefixes.guild + "help"),
     case_insensitive=True,
 )
 
-# Add cogs and extensions
-milton.load_extension("milton.cogs.cli")
+# Add cogs and extensions to be loaded
+
+log.debug("Loading default extensions")
+
+to_load = [
+    # Essential extensions
+    "milton.cogs.cli",
+    "milton.cogs.error_handler",
+    "milton.cogs.tests",
+    # Other extensions
+    "milton.cogs.toys",
+]
+
+for cog in to_load:
+    milton.load_extension(cog)
 
 # Run the client
 milton.run()

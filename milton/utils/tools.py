@@ -1,17 +1,21 @@
 """Collection of utility functions"""
-import random
-from pathlib import Path
-from itertools import zip_longest
 import logging
-from typing import AnyStr, List, Union, Mapping
+import random
+from itertools import zip_longest
+from pathlib import Path
+from typing import AnyStr
+from typing import List
+from typing import Mapping
+from typing import Union
 
 from discord import TextChannel
 
-log = logging.getLogger("milton.utils")
+log = logging.getLogger(__name__)
 
 # Yanked from the python discord bot
 def recursive_update(original: Mapping, new: Mapping) -> None:
-    """
+    """Recursively update nested dictionaries
+
     Helper method which implements a recursive `dict.update`
     method, used for updating the original configuration with
     configuration specified by the user.

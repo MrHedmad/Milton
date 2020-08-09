@@ -4,11 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"discord.py" = "*"
-pyyaml = "*"
+PyYAML = "*"
 aioconsole = "*"
-aiosqlite = "*"
 python-box = "*"
+pre-commit = "*"
+motor = "*"
+ujson = "*"
+mpmath = "*"
+"discord.py" = "*"
 
 [dev-packages]
 
