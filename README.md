@@ -1,13 +1,8 @@
 # The Milton Library Assistant
 [![License](https://img.shields.io/github/license/MrHedmad/Milton-Library-Assistant?style=flat-square)](https://choosealicense.com/licenses/mit/)
-<<<<<<< HEAD
 [![Required Python Version](https://img.shields.io/github/pipenv/locked/python-version/MrHedmad/Milton-Library-Assistant?style=flat-square)](https://python.org)
 [![Code Style](https://img.shields.io/badge/style-Black-black?style=flat-square)](https://github.com/psf/black)
 [![Issues](https://img.shields.io/github/issues/mrhedmad/milton?style=flat-square)](https://github.com/MrHedmad/Milton/issues)
-=======
-[![Required Python Version](https://img.shields.io/github/pipenv/locked/python-version/MrHedmad/Milton-Library-Assistant?style=flat-square)](www.python.org)
-[![Code Style](https://img.shields.io/badge/style-Black-black?style=flat-square)](https://github.com/psf/black)
->>>>>>> d60d39f28deca3d80e8d240507b08fdcb97fa2f8
 
 Home of Milton Library Assistant - the Discord Bot.
 
