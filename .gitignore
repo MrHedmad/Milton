@@ -146,8 +146,5 @@ Dockerfile
 # ignore production tests
 test.py
 
-# Ignore pipenv locks
-Pipfile.lock
-
 # Ingnore local data files
 data.json
