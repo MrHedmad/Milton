@@ -14,12 +14,12 @@ bot:
   pagination_timeout: 300
 
 database:
-  path: "./resources/data.json"
+  path: "./milton/resources/data.json"
 
 # >> Set the path for the logs.
 # Additional logs are created alongside the main one during runtime.
 logs:
-  path: "./logs/mla.log"
+  path: "./milton/logs/mla.log"
   # Levels can be 50 - CRITICAL, 40 - ERROR, 30 - WARNING, 20 - INFO,
   # 10 - DEBUG or some other int. Log messages of level equal or above the
   # specified will be logged.

@@ -23,6 +23,7 @@ class Milton(commands.Bot):
         super().__init__(*args, **kwargs)
         self.config = config  # Bundle the config inside the bot itself.
         self.started_on = time.time()
+        self.owner_id = CONFIG.bot.owner_id
 
     async def on_ready(self):
         logon_str = f"Logged in as {self.user}"

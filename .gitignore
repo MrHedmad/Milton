@@ -131,7 +131,7 @@ dmypy.json
 ### >>>> Module Specific <<<< ###
 
 # Ignore Log files
-milton/logs/
+logs/
 
 # Ignore custom configs
 config.yaml
@@ -148,3 +148,6 @@ test.py
 
 # Ignore pipenv locks
 Pipfile.lock
+
+# Ingnore local data files
+data.json

@@ -6,6 +6,7 @@ from importlib.metadata import version
 
 from discord.ext import commands
 
+import milton
 from milton.bot import Milton
 from milton.utils.paginator import Paginator
 
@@ -15,6 +16,7 @@ class TestingCog(commands.Cog):
         self.bot = bot
 
     @commands.command()
+    @commands.is_owner()
     async def test(self, ctx):
         """Sends a test message"""
 
@@ -39,7 +41,7 @@ class TestingCog(commands.Cog):
         out = Paginator()
 
         # Versions
-        me = None
+        me = milton.__version__
         dpy = version("discord.py")
         python = sys.version.replace("\n", "")
         os = f"{platform.system()} {platform.release()}"
@@ -63,6 +65,7 @@ class TestingCog(commands.Cog):
         await out.paginate(ctx)
 
     @commands.command()
+    @commands.is_owner()
     async def trigger_error(self, ctx):
         raise ValueError("This was triggered by a command.")
 

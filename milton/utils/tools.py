@@ -1,6 +1,8 @@
 """Collection of utility functions"""
 import logging
 import random
+from ast import Str
+from difflib import get_close_matches
 from itertools import zip_longest
 from pathlib import Path
 from typing import AnyStr
@@ -186,3 +188,19 @@ class MsgParser:
         message = message.split()  # This splits @ one or more whitespaces
         self.command = message[0]
         self.args = message[1:]
+
+
+def glob_word(word: AnyStr, words: List[AnyStr], *args, **kwargs):
+    """Return the closests matching word in a list
+
+    If not found, returns the original word. Other parameters are sent to
+    the get_close_matches function.
+    """
+    globbed = get_close_matches(word, words, 1, *args, **kwargs) or word
+    # Need to do this in two steps as `get_close_matches` can return
+    # an empty list
+    if isinstance(globbed, list):
+        globbed = globbed[0]
+
+    assert isinstance(globbed, str)
+    return globbed

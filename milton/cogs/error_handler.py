@@ -30,6 +30,11 @@ class CommandErrorHandler(commands.Cog):
 
         log.debug("Some command errored")
 
+        trace = "".join(
+            traceback.format_exception(type(error), error, error.__traceback__)
+        )
+        trace = trace.strip()
+
         if hasattr(ctx.command, "on_error"):
             log.debug("Invoked, but will not override command's own error handler")
             return
@@ -62,17 +67,15 @@ class CommandErrorHandler(commands.Cog):
             except discord.HTTPException:
                 pass
 
+        elif isinstance(error, commands.errors.CheckFailure):
+            log.debug(f"A command was called, but a check failed. Trace: \n{trace}")
+
         else:
             # All other Errors not returned come here.
 
             # Skip the prompt line
             if "CommandInterface" in self.bot.cogs:
                 print("")
-
-            trace = "".join(
-                traceback.format_exception(type(error), error, error.__traceback__)
-            )
-            trace = trace.strip()
 
             log.error(f"Ignoring exception in command {ctx.command}:\n" f"{trace}")
 

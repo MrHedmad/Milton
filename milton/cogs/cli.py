@@ -17,6 +17,7 @@ from discord.ext.commands.errors import NoEntryPointError
 
 from milton.bot import Milton
 from milton.utils.database import DB
+from milton.utils.tools import glob_word
 from milton.utils.tools import initialize_empty
 
 log = logging.getLogger(__name__)
@@ -84,10 +85,7 @@ class CommandInterface(commands.Cog):
             log.debug(f'Got a CLI command, "{command}"')
             command = command.lower().split()
 
-            globbed = get_close_matches(command[0], self._actions, 1) or command
-            # Need to do this in two steps as `get_close_matches` can return
-            # an empty list
-            globbed = globbed[0]
+            globbed = glob_word(command[0], self._actions)
 
             if globbed != command[0]:
                 print(f'Globbed from "{command[0]}" to "{globbed}".')
