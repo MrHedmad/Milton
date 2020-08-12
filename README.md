@@ -13,7 +13,6 @@ Home of Milton Library Assistant - the Discord Bot.
 
 This is the (hopefully) final iteration of the discord bot for my personal guild. If you find it useful in any way, feel free to run new instances of it. Please also take a look at the source code and suggest fixes for it, as I am not a professional programmer.
 
-<<<<<<< HEAD
 The bot holds data in memory, and does not use a database infrastructure. For now, it stores data in a simple JSON file. When the bot reaches longevity, the plan is to switch to PostgreSQL.
 
 ## Installation
@@ -24,28 +23,12 @@ The bot holds data in memory, and does not use a database infrastructure. For no
 4. Install the python dependencies: `pipenv install`
 5. Configure the bot, such as adding your bot token (see below).
 6. Run the bot by entering a virtual environment (`pipenv shell`) and running `python -m milton` **OR** by running `pipenv run python -m milton`.
-=======
-The bot uses [`sqlite`](https://www.sqlite.org/index.html) as a database infrastructure, which is relatively flexible for small bots.
-
-## Installation
-
-- Install `sqlite`, `python`, `git` and `pipenv` (this is os-specific, so google how-to).
-- Clone the repo to your local machine: `git clone https://github.com/MrHedmad/Milton-Library-Assistant.git`
-- Enter the folder where you cloned this into: `cd Milton-Library-Assistant`
-- Install the dependencies: `pipenv install`
-- Configure the bot, such as adding your bot token (see below).
-- Run the bot by entering a virtual environment (`pipenv shell`) and running `python -m milton`.
->>>>>>> d60d39f28deca3d80e8d240507b08fdcb97fa2f8
 
 If you're contributing, also setup `pre-commit` to automatically run `black` and other checks for you when you commit using `pre-commit install`.
 
 ### Configuration
 
-<<<<<<< HEAD
 Create a `config.yml` (and not `.yaml`!) at the same level of the `milton` folder and add your specific configuration for the bot, overriding any configs in the `default-config.yml` file. Note that the structure of the file must be identical to the first (I suggest copy-pasting it and changing what you need/like).
-=======
-Create a `config.yml` (and not `.yaml`!) file inside the `milton` folder and add your specific configuration for the bot, overriding any configs in the `default-config.yml` file. Note that the structure of the file must be identical to the first (I suggest copy-pasting it and changing what you need/like).
->>>>>>> d60d39f28deca3d80e8d240507b08fdcb97fa2f8
 
 One config you must override is the `bot > token` field, providing your own [discord bot token](https://discord.com/developers/applications).
 
