@@ -1,5 +1,7 @@
 """Provide a cli for additional control"""
+import copy
 import logging
+from asyncio.tasks import current_task
 from difflib import get_close_matches
 from inspect import cleandoc
 from typing import AnyStr
@@ -181,5 +183,21 @@ def setup(bot):
             log.exception("Unexpected exception while loading extension")
         else:
             print(f"Successfully unloaded extension {ext_path}")
+
+    @interface.add_option
+    async def reloadcogs():
+        """Reloads all the cogs in the bot - for testing"""
+        print("Reloading all cogs...")
+        # Iterating over the ext while they reload is not a good idea
+        current_ext = [x for x in interface.bot.extensions]
+        for ext in current_ext:
+            print(f"Attempting to reload {ext}")
+            try:
+                interface.bot.reload_extension(ext)
+            except Exception as e:
+                log.exception("Unexpected exception while reloading extension")
+            else:
+                print(f"Successfully reloaded extension {ext}")
+        print("Finished reloading extensions")
 
     bot.add_cog(interface)

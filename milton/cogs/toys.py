@@ -23,6 +23,7 @@ class Toys(commands.Cog):
 
     @commands.command()
     async def roll(self, ctx, dice):
+        """Roll some dice, like 1d20, or 100d1000!"""
         log.debug("roll was triggered")
 
         out = Paginator()
@@ -67,25 +68,6 @@ class Fun(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-        with Path("./milton/resources/presences.txt").open("r") as stream:
-            self._presences = stream.readlines()
-
-        self.change_presence.start()
-
-    @tasks.loop(minutes=5)
-    async def change_presence(self):
-        """Randomly changes the presence of the bot"""
-        # This is broken, do not use!
-        log.debug("Changed presence due to loop")
-        presence = random.choice(self._presences)
-        if presence.startswith("playing"):
-            activity = discord.Game(presence[:7])
-        await self.bot.change_presence(status=discord.Status.online, activity=activity)
-
-    def cog_unload(self):
-        self.change_presence.cancel()
-
 
 def setup(bot):
     bot.add_cog(Toys(bot))
-    # bot.add_cog(Fun(bot)) Not done yet!

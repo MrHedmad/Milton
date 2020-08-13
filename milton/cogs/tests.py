@@ -4,6 +4,7 @@ import sys
 import time
 from importlib.metadata import version
 
+import discord
 from discord.ext import commands
 
 import milton
@@ -18,7 +19,7 @@ class TestingCog(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def test(self, ctx):
-        """Sends a test message"""
+        """Sends a test message in order to try pagination."""
 
         out = Paginator()
 
@@ -38,12 +39,12 @@ class TestingCog(commands.Cog):
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def status(self, ctx):
         """Returns the status of the bot"""
-        out = Paginator()
+        embed = discord.Embed()
 
         # Versions
         me = milton.__version__
         dpy = version("discord.py")
-        python = sys.version.replace("\n", "")
+        python = sys.version.replace("\n", "").split()[0]
         os = f"{platform.system()} {platform.release()}"
 
         # Statistics
@@ -52,22 +53,46 @@ class TestingCog(commands.Cog):
 
         # Time
         since = datetime.timedelta(seconds=time.time() - self.bot.started_on)
+        form_since = f"{since.days} days and {since.seconds // 60}:{since.seconds % 60}"
 
-        out.add_line(
-            (
-                "**Status**\n"
-                f"Milton Library Assistant version `{me}` - Python `{python}` - Dpy `{dpy}`\n"
-                f"Running on `{os}`.\n"
-                f"I am in {tot_guilds} guilds, and I can see {tot_users} users.\n"
-                f"I was online for {since}."
-            )
+        embed.title = "**Milton Library Assistant - Status**"
+        embed.add_field(name="Version", value=f"{me}")
+        embed.add_field(name="Python Version", value=python, inline=True)
+        embed.add_field(name="OS Information", value=f"{os}")
+        embed.add_field(name="Discord.py", value=dpy)
+        embed.add_field(name="Online since", value=form_since)
+        embed.add_field(
+            name="Watching",
+            value=f"{tot_guilds} guilds - {tot_users} users",
+            inline=True,
         )
-        await out.paginate(ctx)
+
+        await ctx.send(embed=embed)
 
     @commands.command()
     @commands.is_owner()
     async def trigger_error(self, ctx):
+        """Manually trigger a ValueError inside the bot. To test error handling"""
         raise ValueError("This was triggered by a command.")
+
+    @commands.command()
+    async def source(self, ctx):
+        """Returns the link to the bot's source code."""
+        embed = discord.Embed()
+        embed.set_thumbnail(url=str(self.bot.user.avatar_url))
+        embed.set_author(name="Milton Library Assistant")
+        embed.title = "Find me on GitHub!"
+        embed.url = r"https://github.com/MrHedmad/Milton"
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    async def ping(self, ctx):
+        """Pong!"""
+        embed = discord.Embed()
+        embed.title = "**Pong!**"
+        embed.add_field(name="Discord Websocket Latency", value=str(self.bot.latency))
+
+        await ctx.send(embed=embed)
 
 
 def setup(bot: Milton):

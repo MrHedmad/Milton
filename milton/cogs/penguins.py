@@ -13,7 +13,7 @@ from milton.utils.tools import glob_word
 
 
 class ArcticCog(commands.Cog):
-    """A cog hosting all the commands related to the Arctic Guild"""
+    """A cog hosting all the commands related to the Arctic Guild!"""
 
     def __init__(self, bot):
         self.bot: commands.Bot = bot
@@ -34,7 +34,7 @@ class ArcticCog(commands.Cog):
     # HIDE AND SEEK
     @commands.command()
     async def seek(self, ctx, *, query=None):
-        """Get the link of the map for hide and seek shenanigans. Try $seek list"""
+        """Get the link for a hide&seek map. Try $seek list"""
 
         with Path("./milton/resources/hideseek.json").open("r") as stream:
             locations = ujson.load(stream)
