@@ -73,9 +73,11 @@ class Serializer:
                     value = preprocess(value)
                 # I need to remember the types of the values
                 elif isinstance(value, mpf):
+                    log.debug("Making a mpf dirty")
                     value = nstr(value)
                     key += "_mpf"
                 elif isinstance(value, int):
+                    log.debug("Making an int dirty")
                     value = str(value)
                     key += "_int"
                 dirty.update({key: value})
@@ -86,9 +88,9 @@ class Serializer:
                 dictionary = {k: default_to_regular(v) for k, v in dictionary.items()}
             return dictionary
 
-        logging.debug("Making dictionary dirty")
+        log.debug("Making dictionary dirty")
         dirty = preprocess(default_to_regular(clean))
-        logging.debug("Dumping dirty dictionary to file")
+        log.debug("Dumping dirty dictionary to file")
         with self.path.open("w+") as file:
             ujson.dump(
                 dirty,
@@ -111,9 +113,11 @@ class Serializer:
                 if isinstance(value, dict):
                     value = cleanup(value)
                 elif key.endswith("_mpf"):
+                    log.debug("Loading an mpf")
                     key = key[:-4]
                     value = mpf(value)
                 elif key.endswith("_int"):
+                    log.debug("Loading an int")
                     key = key[:-4]
                     value = int(value)
                 clean.update({key: value})

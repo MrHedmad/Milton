@@ -40,7 +40,7 @@ def clean_docstring(docs: AnyStr) -> AnyStr:
 class CommandInterface(commands.Cog):
     """A cog to add the command line interface to the bot"""
 
-    global prompt
+    global prompt  # I know, I know - who cares
 
     def __init__(self, bot: Milton, prompt: AnyStr = ">> ") -> None:
         self.bot: Milton = bot
@@ -78,11 +78,17 @@ class CommandInterface(commands.Cog):
         self._actions[trigger] = action
         self._descriptions[trigger] = desc
 
+        # This return is to reuse the function in other functions
+        return action
+
     @tasks.loop(seconds=1)
     async def run(self) -> None:
         log.debug("Starting the CLI service")
         while True:
             command = await ainput(self._prompt)
+
+            if len(command) == 0:
+                continue
 
             log.debug(f'Got a CLI command, "{command}"')
             command = command.lower().split()
@@ -97,6 +103,7 @@ class CommandInterface(commands.Cog):
             except KeyError:
                 print(f'{globbed} is not a valid command. Try "help"')
             except TypeError as e:
+                print(e)
                 print(f"Wrong number of arguments given to {command[0]}")
 
     @run.before_loop
@@ -185,7 +192,13 @@ def setup(bot):
             print(f"Successfully unloaded extension {ext_path}")
 
     @interface.add_option
-    async def reloadcogs():
+    async def reloadext(ext_path):
+        """Reload an extension. For instance, 'milton.cogs.tests'"""
+        await unloadext(ext_path)
+        await loadext(ext_path)
+
+    @interface.add_option
+    async def reloadallcogs():
         """Reloads all the cogs in the bot - for testing"""
         print("Reloading all cogs...")
         # Iterating over the ext while they reload is not a good idea

@@ -28,6 +28,7 @@ to_load = [
     "milton.cogs.tests",
     # Other extensions
     "milton.cogs.toys",
+    "milton.cogs.birthday",
 ]
 
 for cog in to_load:

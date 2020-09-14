@@ -9,6 +9,9 @@ import traceback
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import errors
+
+import milton.utils.errors as errors
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +31,7 @@ class CommandErrorHandler(commands.Cog):
             The Exception raised.
         """
 
-        log.debug("Some command errored")
+        log.debug("The Error Handler was invoked to handle an error")
 
         trace = "".join(
             traceback.format_exception(type(error), error, error.__traceback__)
@@ -70,9 +73,27 @@ class CommandErrorHandler(commands.Cog):
         elif isinstance(error, commands.errors.CheckFailure):
             log.debug(f"A command was called, but a check failed. Trace: \n{trace}")
 
+        elif isinstance(error, commands.MissingRequiredArgument):
+            log.debug(f"A command was missing a required argument. Trace: \n{trace}")
+            try:
+                await ctx.send(
+                    (
+                        "It looks like you didn't specify some argument."
+                        " Try using the help command."
+                    )
+                )
+            except discord.HTTPException:
+                pass
+
+        elif isinstance(error, errors.UserInputError):
+            # Send feedback to user
+            try:
+                await ctx.send(error.msg)
+            except discord.HTTPException:
+                pass
+
         else:
             # All other Errors not returned come here.
-
             # Skip the prompt line
             if "CommandInterface" in self.bot.cogs:
                 print("")

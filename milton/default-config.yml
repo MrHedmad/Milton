@@ -40,3 +40,9 @@ emojis:
   last:  "\u23e9"  # :fast_forward:
   first: "\u23ea"  # :rewind:
   stop:  ⏹️  # :stop:
+
+# >> Cogs
+
+birthday:
+  # Time (in hours) when to check for birthdays relative to local machien time.
+  when: 10
