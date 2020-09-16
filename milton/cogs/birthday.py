@@ -49,12 +49,19 @@ def time_to_bday(date: Optional[str]) -> Optional[dt.datetime]:
         # 1 day lost by subtraction. I think.
 
 
+def calculate_age(date: Optional[str]) -> Optional[int]:
+    """Returns the age of the person given their birthday"""
+    born = birth_from_str(date)
+    today = dt.date.today()
+    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+
 def is_today(this: dt.date, other: dt.date) -> bool:
     """Checks if the two dates point to the same day"""
     return all((this.day == other.day, this.month == other.month))
 
 
-class BirthdayCog(commands.Cog):
+class BirthdayCog(commands.Cog, name="Birthdays"):
     """Cog for implementing the birthday commands and notifications"""
 
     def __init__(self, bot: Milton) -> None:
@@ -96,6 +103,8 @@ class BirthdayCog(commands.Cog):
             await asyncio.sleep(to_wait)
 
             self.inital_shift = True
+
+        log.info("Checking today's birthdays...")
 
         cursor = self.DBcoll.find({"type": {"$eq": "shout_channel"}})
 
@@ -221,7 +230,7 @@ class BirthdayCog(commands.Cog):
                 out.add_line(f"{username:<25}{date} (-{time_to_bday(date)} days)")
             else:
                 out.add_line(
-                    f"{username:<25}{date} (Age {now.year - dateobj.year},"
+                    f"{username:<25}{date} (Age {calculate_age(date)},"
                     f" -{time_to_bday(date)} days)"
                 )
 

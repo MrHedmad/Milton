@@ -15,7 +15,7 @@ from milton.utils.tools import get_random_line
 log = logging.getLogger(__name__)
 
 
-class Toys(commands.Cog):
+class Toys(commands.Cog, name="Toys"):
     """Cog for implementing toy functions"""
 
     def __init__(self, bot) -> None:
@@ -24,7 +24,6 @@ class Toys(commands.Cog):
     @commands.command()
     async def roll(self, ctx, dice):
         """Roll some dice, like 1d20, or 100d1000!"""
-        log.debug("roll was triggered")
 
         out = Paginator()
 

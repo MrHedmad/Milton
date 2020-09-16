@@ -12,7 +12,7 @@ from milton.bot import Milton
 from milton.utils.paginator import Paginator
 
 
-class TestingCog(commands.Cog):
+class TestingCog(commands.Cog, name="Meta"):
     def __init__(self, bot) -> None:
         self.bot = bot
 
@@ -38,7 +38,10 @@ class TestingCog(commands.Cog):
     @commands.command()
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def status(self, ctx):
-        """Returns the status of the bot"""
+        """Returns the status of the bot.
+
+        Information like uptime, python version and linux version.
+        """
         embed = discord.Embed()
 
         # Versions
@@ -53,14 +56,13 @@ class TestingCog(commands.Cog):
 
         # Time
         since = datetime.timedelta(seconds=time.time() - self.bot.started_on)
-        form_since = f"{since.days} days and {since.seconds // 60}:{since.seconds % 60}"
 
         embed.title = "**Milton Library Assistant - Status**"
         embed.add_field(name="Version", value=f"{me}")
         embed.add_field(name="Python Version", value=python, inline=True)
         embed.add_field(name="OS Information", value=f"{os}")
         embed.add_field(name="Discord.py", value=dpy)
-        embed.add_field(name="Online since", value=form_since)
+        embed.add_field(name="Online since", value=str(since).split(".")[0])
         embed.add_field(
             name="Watching",
             value=f"{tot_guilds} guilds - {tot_users} users",
@@ -77,7 +79,10 @@ class TestingCog(commands.Cog):
 
     @commands.command()
     async def source(self, ctx):
-        """Returns the link to the bot's source code."""
+        """Returns the link to the bot's source code.
+
+        Proudly hosted by GitHub.
+        """
         embed = discord.Embed()
         embed.set_thumbnail(url=str(self.bot.user.avatar_url))
         embed.set_author(name="Milton Library Assistant")
@@ -87,7 +92,10 @@ class TestingCog(commands.Cog):
 
     @commands.command()
     async def ping(self, ctx):
-        """Pong!"""
+        """Pong!
+
+        Returns the discord websocket latency, kinda like the ping of the bot.
+        """
         embed = discord.Embed()
         embed.title = "**Pong!**"
         embed.add_field(name="Discord Websocket Latency", value=str(self.bot.latency))
