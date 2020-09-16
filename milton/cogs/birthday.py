@@ -3,11 +3,12 @@ import asyncio
 import datetime as dt
 import logging
 
+import motor.motor_asyncio as aiomotor
 from discord.ext import commands
 from discord.ext import tasks
 
+from milton.bot import Milton
 from milton.config import CONFIG
-from milton.utils.database import DB
 from milton.utils.errors import UserInputError
 from milton.utils.paginator import Paginator
 
@@ -36,8 +37,9 @@ def is_today(this: dt.date, other: dt.date) -> bool:
 class BirthdayCog(commands.Cog):
     """Cog for implementing the birthday commands and notifications"""
 
-    def __init__(self, bot) -> None:
-        self.bot = bot
+    def __init__(self, bot: Milton) -> None:
+        self.bot: Milton = bot
+        self.DBcoll: aiomotor.AsyncIOMotorCollection = self.bot.DB.birthdays
         # Keep track if the initial temporal realignment has been done
         self.inital_shift = False
 
@@ -75,10 +77,13 @@ class BirthdayCog(commands.Cog):
 
             self.inital_shift = True
 
-        for guild_id in DB.find(["birthday", "guilds"]):
+        cursor = self.DBcoll.find({"type": {"$eq": "shout_channel"}})
 
-            shout_channel = DB.find(["birthday", "shout_channels", guild_id])
-            if isinstance(shout_channel, int):
+        async for entry in cursor:
+            guild_id = entry["guild_id"]
+            shout_channel = entry["value"]
+
+            if shout_channel:
                 await self.check_birthdays(guild_id)
 
     @check_birthdays_task.before_loop
@@ -91,13 +96,24 @@ class BirthdayCog(commands.Cog):
         Takes a guild_id of a guild THAT HAS SET THE SHOUT CHANNEL!!
         """
         guild_id = str(guild_id)
-        shout_channel_id = DB.find(["birthday", "shout_channels", guild_id])
-        assert not isinstance(shout_channel_id, dict)
+
+        entry = await self.DBcoll.find_one(
+            {"guild_id": {"$eq": guild_id}, "type": {"$eq": "shout_channel"}}
+        )
+
+        shout_channel_id = entry["value"]
+
+        assert shout_channel_id is not None
 
         out = Paginator()
         today = dt.date.today()
 
-        for user_id, date in DB.find(["birthday", "guilds", guild_id, "dates"]).items():
+        cursor = self.DBcoll.find({"guild_id": guild_id, "type": "date"})
+
+        async for entry in cursor:
+            date = entry["value"]
+            user_id = entry["user_id"]
+
             if not date:
                 continue
 
@@ -135,7 +151,11 @@ class BirthdayCog(commands.Cog):
                     )
                 )
 
-                DB.update(["birthday", "shout_channels", guild_id], None)
+                self.DBcoll.update_one(
+                    {"guild_id": guild_id, "type": "shout_channel"},
+                    {"$set": {"value": None}},
+                    upsert=True,
+                )
 
     @commands.guild_only()
     @commands.group(
@@ -155,11 +175,12 @@ class BirthdayCog(commands.Cog):
 
         guild_id = str(ctx.guild.id)
         guild = self.bot.get_guild(int(guild_id))
-        birthdays = DB.find(["birthday", "guilds", guild_id, "dates"])
-        # Remember that birthdays is a dict of user_id: date
 
-        for user_id, date in birthdays.items():
-            user_id = int(user_id)
+        cursor = self.DBcoll.find({"guild_id": guild_id, "type": "date"})
+
+        async for entry in cursor:
+            user_id = int(entry["user_id"])
+            date = entry["value"]
             user = guild.get_member(user_id)
             if not (user is not None and date is not None):
                 continue
@@ -205,19 +226,27 @@ class BirthdayCog(commands.Cog):
 
         log.debug(f"Updating birthday of user {user_id} in guild {guild_id}")
 
-        DB.update(["birthday", "guilds", guild_id, "dates", user_id], date)
+        await self.DBcoll.update_one(
+            {"type": "date", "guild_id": guild_id, "user_id": user_id},
+            {"$set": {"value": date}},
+            upsert=True,
+        )
 
         await ctx.send("Huzzah! I will now remember your birthday.")
 
     @birthday_group.command()
     async def remove(self, ctx):
-        """Removes the birthday date for yourself."""
+        """Removes the birthday date from yourself."""
         guild_id = str(ctx.message.guild.id)
         user_id = str(ctx.message.author.id)
 
         log.debug(f"Removing birthday of user {user_id} in guild {guild_id}")
 
-        DB.update(["birthday", "guilds", guild_id, "dates", user_id], None)
+        await self.DBcoll.update_one(
+            {"type": "date", "guild_id": guild_id, "user_id": user_id},
+            {"$set": {"value": None}},
+            upsert=True,
+        )
 
         await ctx.send("Sure! I forgot your birthday for this server. Bye!")
 
@@ -236,7 +265,11 @@ class BirthdayCog(commands.Cog):
             f"Setting birthday shout channel for guild {guild_id} to {channel_id}"
         )
 
-        DB.update(["birthday", "shout_channels", guild_id], channel_id)
+        await self.DBcoll.update_one(
+            {"guild_id": guild_id, "type": "shout_channel"},
+            {"$set": {"value": channel_id}},
+            upsert=True,
+        )
 
         await ctx.send(
             (
@@ -259,7 +292,11 @@ class BirthdayCog(commands.Cog):
 
         log.debug(f"Removing birthday shout channel for guild {guild_id}")
 
-        DB.update(["birthday", "shout_channels", guild_id], None)
+        await self.DBcoll.update_one(
+            {"guild_id": guild_id, "type": "shout_channel"},
+            {"$set": {"value": None}},
+            upsert=True,
+        )
 
         await ctx.send(("I will be silent about birthdays from now on."))
 
@@ -272,8 +309,10 @@ class BirthdayCog(commands.Cog):
         """
         await ctx.send("Checking for birthdays...")
         guild_id = str(ctx.guild.id)
-        shout_channel = DB.find(["birthday", "shout_channels", guild_id])
-        if not isinstance(shout_channel, dict) and shout_channel is not None:
+        entry = await self.DBcoll.find_one(
+            {"guild_id": {"$eq": guild_id}, "type": {"$eq": "shout_channel"}}
+        )
+        if entry["value"] is not None:
             await self.check_birthdays(guild_id)
         else:
             await ctx.send("Sorry, you did not set a shout channel.")

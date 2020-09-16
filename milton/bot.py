@@ -3,6 +3,7 @@ import sys
 import time
 
 import discord
+import motor.motor_asyncio as aiomotor
 from box import Box
 from discord.abc import PrivateChannel
 from discord.ext import commands
@@ -10,7 +11,6 @@ from discord.ext.commands.bot import when_mentioned
 from discord.ext.commands.bot import when_mentioned_or
 
 from milton.config import CONFIG
-from milton.utils.database import DB
 from milton.utils.intro import make_intro
 
 log = logging.getLogger(__name__)
@@ -21,9 +21,14 @@ class Milton(commands.Bot):
 
     def __init__(self, config: Box, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.config = config  # Bundle the config inside the bot itself.
-        self.started_on = time.time()
-        self.owner_id = CONFIG.bot.owner_id
+        self.config: Box = config  # Bundle the config inside the bot itself.
+        self.started_on: int = time.time()
+        self.owner_id: int = CONFIG.bot.owner_id
+
+        self.DbClient: aiomotor.AsyncIOMotorClient = aiomotor.AsyncIOMotorClient()
+        self.DB: aiomotor.AsyncIOMotorDatabase = self.DbClient[
+            CONFIG.database.identifier
+        ]
 
     async def on_ready(self):
         logon_str = f"Logged in as {self.user}"

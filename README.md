@@ -8,11 +8,13 @@ Home of Milton Library Assistant - the Discord Bot.
 
 This is the (hopefully) final iteration of the discord bot for my personal guild. If you find it useful in any way, feel free to run new instances of it. Please also take a look at the source code and suggest fixes for it, as I am not a professional programmer.
 
-The bot holds data in memory, and does not use a database infrastructure. For now, it stores data in a simple JSON file. When the bot reaches longevity, the plan is to switch to PostgreSQL.
+The bot uses [MongoDB](https://www.mongodb.com/) to store data.
+
+This bot is only tested on my machine, which runs Linux. Hence, I am not sure of its behaviour on Windows.
 
 ## Installation
 
-1. Install `python` (3.8+), `git` and `pipenv` (this is os-specific, so google how-to).
+1. Install `python` (3.8+), `git`, `mongoDB` and `pipenv` (this is os-specific, so google how-to).
 2. Clone the repo to your local machine: `git clone https://github.com/MrHedmad/Milton.git`
 3. Enter the folder where you cloned this into: `cd Milton`
 4. Install the python dependencies: `pipenv install`
