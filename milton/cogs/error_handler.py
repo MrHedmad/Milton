@@ -76,12 +76,7 @@ class CommandErrorHandler(commands.Cog):
         elif isinstance(error, commands.MissingRequiredArgument):
             log.debug(f"A command was missing a required argument. Trace: \n{trace}")
             try:
-                await ctx.send(
-                    (
-                        "It looks like you didn't specify some argument."
-                        " Try using the help command."
-                    )
-                )
+                await ctx.send("```\nUsage:\n" + ctx.command.help + "```")
             except discord.HTTPException:
                 pass
 

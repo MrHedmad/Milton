@@ -53,8 +53,12 @@ class Paginator(commands.Paginator):
         prefix: Optional[str] = "",
         suffix: Optional[str] = "",
         max_size: Optional[int] = 2000,
+        force_embed: Optional[bool] = False,
+        title: Optional[str] = None,
     ) -> None:
         super().__init__(prefix, suffix, max_size)
+        self.force_embed = force_embed
+        self.title = title
 
     async def paginate(self, ctx: Messageable):
         """Paginator pagination plus emojis"""
@@ -79,13 +83,17 @@ class Paginator(commands.Paginator):
         pages = self.pages
         max_pages = len(pages)
 
-        embed = discord.Embed(description=pages[0])
+        if self.title:
+            embed = discord.Embed(description=pages[0], title=self.title)
+        else:
+            embed = discord.Embed(description=pages[0])
         current_page = 0
 
-        if max_pages <= 1:
+        if max_pages <= 1 and self.force_embed is False:
             # Only a single page to send. Just send it and stop
-            if len(embed) < 2000:
-                return await ctx.send(embed.description)
+            return await ctx.send(embed.description)
+        elif self.force_embed:
+            # Forced to send an embed anyway.
             return await ctx.send(embed=embed)
 
         # Add a handy descriptive footer

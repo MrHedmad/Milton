@@ -2,6 +2,8 @@
 import asyncio
 import datetime as dt
 import logging
+from datetime import datetime
+from typing import Optional
 
 import motor.motor_asyncio as aiomotor
 from discord.ext import commands
@@ -15,18 +17,36 @@ from milton.utils.paginator import Paginator
 log = logging.getLogger(__name__)
 
 
-def birth_from_str(date: str) -> dt.datetime:
+def birth_from_str(date: Optional[str]) -> Optional[dt.datetime]:
     """Returns a datetime object by parsing a date
 
     A wrapper to handle the optional presence of a year
     """
-    if len(date) == 5:
-        # This is a date without a year
-        birthday = dt.datetime.strptime(date, "%d-%m")
-    else:
-        birthday = dt.datetime.strptime(date, "%d-%m-%Y")
+    if date:
+        if len(date) == 5:
+            # This is a date without a year
+            birthday = dt.datetime.strptime(date, "%d-%m")
+            birthday = birthday.replace(year=1)
+        else:
+            birthday = dt.datetime.strptime(date, "%d-%m-%Y")
 
-    return birthday
+        return birthday
+    return None
+
+
+def time_to_bday(date: Optional[str]) -> Optional[dt.datetime]:
+    """Returns the time to the next birthday"""
+    now = datetime.now()
+    if (date := birth_from_str(date)) :
+        date = date.replace(year=now.year)
+        diff = date - now
+
+        if diff.days < 0:
+            return (now.replace(year=(now.year + 1)) - now).days + diff.days + 2
+        return diff.days + 2
+
+        # The =2 above is to count the current date AND to offset for the
+        # 1 day lost by subtraction. I think.
 
 
 def is_today(this: dt.date, other: dt.date) -> bool:
@@ -122,7 +142,7 @@ class BirthdayCog(commands.Cog):
             if not is_today(today, birthday):
                 continue
 
-            if birthday.year == 1900:
+            if birthday.year == 1:
                 # This is (probably) a date without a year.
                 out.add_line(f"Happy birthday to you, <@!{user_id}>!!")
             else:
@@ -170,23 +190,40 @@ class BirthdayCog(commands.Cog):
         people who have registered a birthday in this specific server.
         """
         do_paginate = False  # This is horrible but I want to get it over with
-        out = Paginator(prefix="```", suffix="```")
-        out.add_line("Here are the birthdays for this server:")
+        out = Paginator(
+            prefix="```",
+            suffix="```",
+            force_embed=True,
+            title=f"Here are the birthdays for **{ctx.guild.name}**",
+        )
 
         guild_id = str(ctx.guild.id)
         guild = self.bot.get_guild(int(guild_id))
 
         cursor = self.DBcoll.find({"guild_id": guild_id, "type": "date"})
 
-        async for entry in cursor:
+        docs = await cursor.to_list(None)  # None means unlimited
+        docs = sorted(docs, key=lambda x: time_to_bday(x["value"]))
+
+        for entry in docs:
             user_id = int(entry["user_id"])
             date = entry["value"]
+
+            dateobj = birth_from_str(date)
+            now = datetime.now()
+
             user = guild.get_member(user_id)
             if not (user is not None and date is not None):
                 continue
             username = user.display_name
             do_paginate = True
-            out.add_line(f"{username:<20} {date}")
+            if dateobj.year == 1:
+                out.add_line(f"{username:<25}{date} (-{time_to_bday(date)} days)")
+            else:
+                out.add_line(
+                    f"{username:<25}{date} (Age {now.year - dateobj.year},"
+                    f" -{time_to_bday(date)} days)"
+                )
 
         if do_paginate:
             await out.paginate(ctx)
@@ -312,7 +349,7 @@ class BirthdayCog(commands.Cog):
         entry = await self.DBcoll.find_one(
             {"guild_id": {"$eq": guild_id}, "type": {"$eq": "shout_channel"}}
         )
-        if entry["value"] is not None:
+        if entry and entry["value"] is not None:
             await self.check_birthdays(guild_id)
         else:
             await ctx.send("Sorry, you did not set a shout channel.")
