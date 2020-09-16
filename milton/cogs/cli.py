@@ -18,7 +18,6 @@ from discord.ext.commands.errors import ExtensionNotLoaded
 from discord.ext.commands.errors import NoEntryPointError
 
 from milton.bot import Milton
-from milton.utils.database import DB
 from milton.utils.tools import glob_word
 from milton.utils.tools import initialize_empty
 
@@ -127,27 +126,6 @@ def setup(bot):
         """Deletes the (latest) log file, for debug purposes"""
         initialize_empty(bot.config.logs.path, "")
         log.info("Log was flushed from CLI")
-
-    @interface.add_option
-    async def save():
-        """Save the database to the file specified in the config"""
-        log.info("Database save triggered from CLI")
-        DB.save()
-
-    @interface.add_option
-    async def update(*args):
-        """Update a map in the dictionary.
-
-        Same as using DB.update(). The order of the args must be map, value and
-        operation.
-        """
-        log.info(
-            (
-                "The CLI sent a DB update order. "
-                f"Updating the map {args[0]} with value {args[1]} and operation {args[2]}"
-            )
-        )
-        DB.update(*args)
 
     @interface.add_option
     async def extensions():

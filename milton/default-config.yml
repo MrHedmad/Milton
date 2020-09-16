@@ -14,7 +14,9 @@ bot:
   pagination_timeout: 300
 
 database:
-  path: "./milton/resources/data.json"
+  # >> Set the name for the database in mongoDB. Can be useful if multiple
+  # istanced of the bot have to run simultaneously with different databases.
+  identifier: "milton_bot"
 
 # >> Set the path for the logs.
 # Additional logs are created alongside the main one during runtime.
