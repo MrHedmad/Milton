@@ -9,6 +9,7 @@ from typing import Optional
 import discord
 from discord import Message
 from discord.abc import Messageable
+from discord.embeds import EmptyEmbed
 from discord.ext import commands
 
 from milton.config import CONFIG
@@ -83,10 +84,7 @@ class Paginator(commands.Paginator):
         pages = self.pages
         max_pages = len(pages)
 
-        if self.title:
-            embed = discord.Embed(description=pages[0], title=self.title)
-        else:
-            embed = discord.Embed(description=pages[0])
+        embed = discord.Embed(description=pages[0], title=self.title or EmptyEmbed)
         current_page = 0
 
         if max_pages <= 1 and self.force_embed is False:

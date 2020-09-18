@@ -10,7 +10,10 @@ from typing import List
 from typing import Mapping
 from typing import Union
 
+import async_timeout
+from aiohttp import ClientSession
 from discord import TextChannel
+from discord.client import Client
 
 log = logging.getLogger(__name__)
 
@@ -204,3 +207,9 @@ def glob_word(word: AnyStr, words: List[AnyStr], *args, **kwargs):
 
     assert isinstance(globbed, str)
     return globbed
+
+
+async def fetch(session: ClientSession, url: str, params: Mapping):
+    async with async_timeout.timeout(10):
+        async with session.get(url, params=params) as response:
+            return await response.text()

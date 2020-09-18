@@ -12,6 +12,10 @@ ujson = "*"
 mpmath = "*"
 "discord.py" = "*"
 motor = "*"
+aiohttp = "*"
+cchardet = "*"
+aiodns = "*"
+async-timeout = "*"
 
 [dev-packages]
 

@@ -117,8 +117,7 @@ def setup(bot):
     @interface.add_option
     async def shutdown():
         """Gently shuts down the bot instance, cleaning up everything"""
-        log.info("Milton is shutting down.")
-        log.info("Closing loop")
+        log.info("The CLI has told Milton to shutdown.")
         await bot.close()
 
     @interface.add_option

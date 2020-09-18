@@ -60,12 +60,13 @@ class Toys(commands.Cog, name="Toys"):
         out.add_line(message)
         return await out.paginate(ctx)
 
-
-class Fun(commands.Cog):
-    """Cog for implementing fun and goofy functions"""
-
-    def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot
+    @commands.command()
+    async def fact(self, ctx):
+        """Send a totally accurate fact"""
+        embed = discord.Embed(
+            description=get_random_line("./milton/resources/facts.txt")
+        )
+        await ctx.send(embed=embed)
 
 
 def setup(bot):

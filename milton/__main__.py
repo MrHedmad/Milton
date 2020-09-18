@@ -25,8 +25,9 @@ to_load = [
     # Essential extensions
     "milton.cogs.cli",
     "milton.cogs.error_handler",
-    "milton.cogs.tests",
+    "milton.cogs.debug",
     # Other extensions
+    "milton.cogs.meta",
     "milton.cogs.toys",
     "milton.cogs.birthday",
 ]

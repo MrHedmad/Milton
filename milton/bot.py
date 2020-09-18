@@ -2,6 +2,7 @@ import logging
 import sys
 import time
 
+import aiohttp
 import discord
 import motor.motor_asyncio as aiomotor
 from box import Box
@@ -30,6 +31,8 @@ class Milton(commands.Bot):
             CONFIG.database.identifier
         ]
 
+        self.http_session = aiohttp.ClientSession()
+
     async def on_ready(self):
         logon_str = f"Logged in as {self.user}"
         print(logon_str)
@@ -49,8 +52,13 @@ class Milton(commands.Bot):
         super().run(self.config.bot.token, *args, **kwargs)
 
     async def close(self):
+        # This may get called twice due to some internal thing in discord.py.
+        # I cannot do much other than sit and watch it doing twice.
+        log.info("Closing AIOHTTP session...")
+        await self.http_session.close()
+
+        log.info("Closing bot loop...")
         await super().close()
-        log.info("The bot instance is closing. Goodbye!")
 
     async def on_error(self, event_method, *args, **kwargs):
         """Pass the error to the logger instead of the normal behavior"""

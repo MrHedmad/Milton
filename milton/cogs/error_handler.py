@@ -62,6 +62,12 @@ class CommandErrorHandler(commands.Cog):
         if isinstance(error, commands.DisabledCommand):
             await ctx.send(f"{ctx.command} has been disabled.")
 
+        elif isinstance(error, commands.CommandOnCooldown):
+            try:
+                await ctx.send(str(error))
+            except discord.HTTPException:
+                pass
+
         elif isinstance(error, commands.NoPrivateMessage):
             try:
                 await ctx.author.send(
