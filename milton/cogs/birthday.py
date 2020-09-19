@@ -61,6 +61,26 @@ def is_today(this: dt.date, other: dt.date) -> bool:
     return all((this.day == other.day, this.month == other.month))
 
 
+def clean_date(date: Optional[str]):
+    """This shouldn't have been necessary...
+
+    Fixes people entering non-0 padded dates.
+    Mostly done to appease Dragon's OCD.
+    """
+    if not date:
+        return date
+
+    if len(date) in (5, 9):
+        return date
+    else:
+        output = []
+        for item in date.split("-"):
+            if len(item) == 1:
+                item = f"0{item}"
+            output.append(item)
+        return "-".join(output)
+
+
 class BirthdayCog(commands.Cog, name="Birthdays"):
     """Cog for implementing the birthday commands and notifications"""
 
@@ -209,14 +229,16 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
         guild_id = str(ctx.guild.id)
         guild = self.bot.get_guild(int(guild_id))
 
-        cursor = self.DBcoll.find({"guild_id": guild_id, "type": "date"})
+        cursor = self.DBcoll.find(
+            {"guild_id": guild_id, "type": "date", "value": {"$ne": None}}
+        )
 
         docs = await cursor.to_list(None)  # None means unlimited
         docs = sorted(docs, key=lambda x: time_to_bday(x["value"]))
 
         for entry in docs:
             user_id = int(entry["user_id"])
-            date = entry["value"]
+            date = clean_date(entry["value"])
 
             dateobj = birth_from_str(date)
             now = datetime.now()
