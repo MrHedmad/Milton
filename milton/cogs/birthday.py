@@ -7,10 +7,10 @@ from typing import Optional
 
 import motor.motor_asyncio as aiomotor
 from discord.ext import commands
-from discord.ext import tasks
 
 from milton.bot import Milton
 from milton.config import CONFIG
+from milton.utils import tasks
 from milton.utils.errors import UserInputError
 from milton.utils.paginator import Paginator
 
@@ -61,49 +61,41 @@ def is_today(this: dt.date, other: dt.date) -> bool:
     return all((this.day == other.day, this.month == other.month))
 
 
+def clean_date(date: Optional[str]):
+    """This shouldn't have been necessary...
+
+    Fixes people entering non-0 padded dates.
+    Mostly done to appease Dragon's OCD.
+    """
+    if not date:
+        return date
+
+    if len(date) in (5, 9):
+        return date
+    else:
+        output = []
+        for item in date.split("-"):
+            if len(item) == 1:
+                item = f"0{item}"
+            output.append(item)
+        return "-".join(output)
+
+
 class BirthdayCog(commands.Cog, name="Birthdays"):
     """Cog for implementing the birthday commands and notifications"""
 
     def __init__(self, bot: Milton) -> None:
         self.bot: Milton = bot
         self.DBcoll: aiomotor.AsyncIOMotorCollection = self.bot.DB.birthdays
-        # Keep track if the initial temporal realignment has been done
-        self.inital_shift = False
 
         self.check_birthdays_task.start()
 
     def cog_unload(self):
         self.check_birthdays_task.stop()
 
-    @tasks.loop(hours=24)
+    @tasks.loop(at=dt.time(hour=14), hours=24)
     async def check_birthdays_task(self):
         """Tasks the checking of the birthdays in a loop"""
-        # Syncronize with the correct time
-        if not self.inital_shift:
-            log.info("Realigning birthday checks...")
-            now = dt.datetime.now()
-            # When was the check today?
-            check_today = dt.datetime.now().replace(
-                hour=CONFIG.birthday.when, second=0, microsecond=0
-            )
-
-            if now > check_today:
-                log.debug("The check today was already passed. Waiting tomorrow")
-                # We already passed today's check. Check tomorrow.
-                # Need to wait (24*60*60) seconds (86400) - the delta
-                to_wait = 86400 - (now - check_today).seconds
-
-            else:
-                log.debug("The check today still hasn't happened. Waiting to it")
-                to_wait = (now - check_today).seconds
-
-            hours = to_wait // (60 * 60)
-            seconds = to_wait % (60)
-            log.debug(f"Waiting {to_wait} seconds, aka {hours}:{seconds}")
-            await asyncio.sleep(to_wait)
-
-            self.inital_shift = True
-
         log.info("Checking today's birthdays...")
 
         cursor = self.DBcoll.find({"type": {"$eq": "shout_channel"}})
@@ -116,7 +108,7 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
                 await self.check_birthdays(guild_id)
 
     @check_birthdays_task.before_loop
-    async def before_cli(self):
+    async def before_task(self):
         await self.bot.wait_until_ready()
 
     async def check_birthdays(self, guild_id: int):
@@ -209,14 +201,16 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
         guild_id = str(ctx.guild.id)
         guild = self.bot.get_guild(int(guild_id))
 
-        cursor = self.DBcoll.find({"guild_id": guild_id, "type": "date"})
+        cursor = self.DBcoll.find(
+            {"guild_id": guild_id, "type": "date", "value": {"$ne": None}}
+        )
 
         docs = await cursor.to_list(None)  # None means unlimited
         docs = sorted(docs, key=lambda x: time_to_bday(x["value"]))
 
         for entry in docs:
             user_id = int(entry["user_id"])
-            date = entry["value"]
+            date = clean_date(entry["value"])
 
             dateobj = birth_from_str(date)
             now = datetime.now()

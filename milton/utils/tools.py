@@ -2,6 +2,10 @@
 import logging
 import random
 from ast import Str
+from datetime import date
+from datetime import datetime
+from datetime import time
+from datetime import timedelta
 from difflib import get_close_matches
 from itertools import zip_longest
 from pathlib import Path
@@ -213,3 +217,15 @@ async def fetch(session: ClientSession, url: str, params: Mapping):
     async with async_timeout.timeout(10):
         async with session.get(url, params=params) as response:
             return await response.text()
+
+
+def timediff(now: time, then: time) -> timedelta:
+    """Calculates the difference between two times
+
+    Returns now - then
+    """
+    today = datetime.now().date()
+    now = datetime.combine(today, now)
+    then = datetime.combine(today, then)
+
+    return now - then
