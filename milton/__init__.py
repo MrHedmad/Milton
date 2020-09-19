@@ -8,7 +8,8 @@ from milton.config import CONFIG
 
 # Set milton's version
 
-__version__ = "0.0.3"
+with Path("./milton/VERSION").open("r") as file:
+    __version__ = file.read()
 
 # Setup logging
 log = logging.getLogger("milton")  # Keep this at the module level name
