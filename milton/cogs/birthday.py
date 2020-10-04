@@ -42,11 +42,8 @@ def time_to_bday(date: Optional[str]) -> Optional[dt.datetime]:
         diff = date - now
 
         if diff.days < 0:
-            return (now.replace(year=(now.year + 1)) - now).days + diff.days + 2
-        return diff.days + 2
-
-        # The =2 above is to count the current date AND to offset for the
-        # 1 day lost by subtraction. I think.
+            return (now.replace(year=(now.year + 1)) - now).days + diff.days
+        return diff.days
 
 
 def calculate_age(date: Optional[str]) -> Optional[int]:
