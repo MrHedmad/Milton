@@ -216,6 +216,8 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
             if not (user is not None and date is not None):
                 continue
             username = user.display_name
+            if len(username) > 20:
+                username = username[:20] + "..."
             do_paginate = True
             if dateobj.year == 1:
                 out.add_line(f"{username:<25}{date} (-{time_to_bday(date)} days)")
