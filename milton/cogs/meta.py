@@ -101,7 +101,7 @@ class MetaCog(commands.Cog, name="Meta"):
         embed.set_thumbnail(url=str(self.bot.user.avatar_url))
         embed.set_author(name="Milton Library Assistant")
         embed.title = "Read my full changelog on GitHub!"
-        embed.url = r"https://github.com/MrHedmad/Milton/CHANGELOG.md"
+        embed.url = r"https://github.com/MrHedmad/Milton/blob/master/CHANGELOG.md"
         await ctx.send(embed=embed)
 
 
