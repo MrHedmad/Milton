@@ -3,12 +3,15 @@ import platform
 import sys
 import time
 from importlib.metadata import version
+from pathlib import Path
 
 import discord
 from discord.ext import commands
 
 import milton
 from milton.bot import Milton
+from milton.utils.changelog_parser import Changelog
+from milton.utils.changelog_parser import make_changelog
 from milton.utils.paginator import Paginator
 
 
@@ -26,7 +29,7 @@ class MetaCog(commands.Cog, name="Meta"):
         embed = discord.Embed()
 
         # Versions
-        me = milton.__version__
+        me = self.bot.version
         dpy = version("discord.py")
         python = sys.version.replace("\n", "").split()[0]
         os = f"{platform.system()} {platform.release()}"
@@ -75,6 +78,30 @@ class MetaCog(commands.Cog, name="Meta"):
         embed.title = "**Pong!**"
         embed.add_field(name="Discord Websocket Latency", value=str(self.bot.latency))
 
+        await ctx.send(embed=embed)
+
+    @commands.group(
+        name="changes",
+        aliases=("changelog", "log", "notes"),
+        invoke_without_command=True,
+    )
+    async def changes_group(self, ctx):
+        """Display the full changelog for the bot"""
+        out = self.bot.changelog.to_paginator()
+        await out.paginate(ctx)
+
+    @changes_group.command()
+    async def link(self, ctx):
+        """Returns the link to the bot's full changelog.
+
+        For those who prefer a less interactive changelog.
+        Proudly hosted by GitHub.
+        """
+        embed = discord.Embed()
+        embed.set_thumbnail(url=str(self.bot.user.avatar_url))
+        embed.set_author(name="Milton Library Assistant")
+        embed.title = "Read my full changelog on GitHub!"
+        embed.url = r"https://github.com/MrHedmad/Milton/CHANGELOG.md"
         await ctx.send(embed=embed)
 
 

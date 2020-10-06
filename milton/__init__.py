@@ -6,11 +6,6 @@ from pathlib import Path
 
 from milton.config import CONFIG
 
-# Set milton's version
-
-with Path("./milton/VERSION").open("r") as file:
-    __version__ = file.read()
-
 # Setup logging
 log = logging.getLogger("milton")  # Keep this at the module level name
 log.setLevel(logging.DEBUG)

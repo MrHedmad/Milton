@@ -1,6 +1,7 @@
 import logging
 import sys
 import time
+from pathlib import Path
 
 import aiohttp
 import discord
@@ -12,6 +13,7 @@ from discord.ext.commands.bot import when_mentioned
 from discord.ext.commands.bot import when_mentioned_or
 
 from milton.config import CONFIG
+from milton.utils.changelog_parser import make_changelog
 from milton.utils.intro import make_intro
 
 log = logging.getLogger(__name__)
@@ -32,6 +34,12 @@ class Milton(commands.Bot):
         ]
 
         self.http_session = aiohttp.ClientSession()
+
+        # move from here to the CHANGELOG file
+        path = Path(__file__).parent.parent
+        path /= "CHANGELOG.md"
+        self.changelog = make_changelog(path)
+        self.version = self.changelog.latest_version
 
     async def on_ready(self):
         logon_str = f"Logged in as {self.user}"
