@@ -11,6 +11,9 @@ The Patch version is increased for any other change.
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
 ## [0.1.1-beta] - 2020-10-07
+### Changed
+- !! Upgraded from python 3.8 to python 3.9
+
 ### Removed
 - Some stray files have been removed.
 
