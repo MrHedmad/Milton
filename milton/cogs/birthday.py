@@ -1,5 +1,4 @@
 # Implements the birthday cog
-import asyncio
 import datetime as dt
 import logging
 from datetime import datetime
@@ -90,7 +89,7 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
     def cog_unload(self):
         self.check_birthdays_task.stop()
 
-    @tasks.loop(at=dt.time(hour=14), hours=24)
+    @tasks.loop(at=dt.time(hour=CONFIG.birthday.when), hours=24)
     async def check_birthdays_task(self):
         """Tasks the checking of the birthdays in a loop"""
         log.info("Checking today's birthdays...")

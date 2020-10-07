@@ -46,5 +46,5 @@ emojis:
 # >> Cogs
 
 birthday:
-  # Time (in hours) when to check for birthdays relative to local machien time.
+  # Time (in UTC hours) when to check for birthdays.
   when: 10

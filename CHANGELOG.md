@@ -6,18 +6,26 @@ and this project adheres to (a thing similar to) [Semantic Versioning](https://s
 
 The Major version is increased when large code changes are made, such as changes in the storage facility.
 The Minor version is increased when commands are added or removed.
-The Patch version is increased for any other version.
+The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
+
+## [0.1.1-beta] - 2020-10-07
+### Removed
+- Some stray files have been removed.
+
+### Fixed
+- Fixed some typos in the changelog.
+- Fixed the birthday cog ignoring the `config.yml` file.
+
 
 ## [0.1.0-beta] - 2020-10-06
 ### Added
 - !! Added the changelog and the `changelog` command.
-- Added the `changelog list` command to provide a link to this same changelog on GitHub.
+- Added the `changelog link` command to provide a link to this same changelog on GitHub.
 - We are now following a sort of Sematic Versioning. See the changelog directly on GitHub for more information.
 - !! As the changelog has to be parsed, the semantics of it have to be preserved. Details in the `changelog_typing.md` file.
 
 ### Changed
 - The bot version is no longer in the `VERSION` file but in the bot class itself.
 - Now the bot's version is aligned to the changelog's latest version.
--
