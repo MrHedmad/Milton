@@ -77,9 +77,6 @@ class BanBazza(commands.Cog):
 
     def __init__(self, bot) -> None:
         self.bot = bot
-        self.home = self.bot.get_channel(311200788858798080)
-        self.target = dt.date(2020, 11, 8)
-        self.bazza_id = 485910756324540437
         self.ban_bazza.start()
 
     def cog_unload(self):
@@ -89,25 +86,30 @@ class BanBazza(commands.Cog):
     async def ban_bazza(self):
         """Ban Bazza the 8th of November. He asked for it!"""
         today = dt.date.today()
-        if self.target == today:
+        home = self.bot.get_channel(311200788858798080)
+        bazza_id = 485910756324540437
+        target = dt.date(2020, 11, 8)
+        if target == today:
             # Banning Bazza
-            bazza_user = self.bot.get_user(self.bazza_id)
+            bazza_user = self.bot.get_user(bazza_id)
             if bazza_user:
                 await self.bot.ban(bazza_user, reason="Tanti Auguri Bazza!!!")
-                await self.home.send("Bazza é stato bannato! Yay!")
+                await home.send("Bazza é stato bannato! Yay!")
             self.stop()
             return
 
-        delta = today - self.target
-        await self.home.send(f"BAN BAZZA L'8 NOVEMBRE\nCountdown: {delta.days}")
+        delta = today - target
+        await home.send(f"BAN BAZZA L'8 NOVEMBRE\nCountdown: {delta.days}")
 
     @ban_bazza.before_loop
     async def bazza_before(self):
         await self.bot.wait_until_ready()
-        await self.home.send(
+        bazza_id = 485910756324540437
+        home = self.bot.get_channel(311200788858798080)
+        await home.send(
             embed=discord.Embed(
                 title="Ban Bazza Reminder",
-                description=f"Pronto a ricordare a @<{self.bazza_id}> che deve essere Bannato l'8 Novembre. Prova `bzban`",
+                description=f"Pronto a ricordare a @<{bazza_id}> che deve essere Bannato l'8 Novembre. Prova `bzban`",
             )
         )
 
@@ -115,8 +117,9 @@ class BanBazza(commands.Cog):
     @commands.check_any(checks.in_guild(311200788858798080), checks.in_test_guild())
     async def bazza_check(self, ctx):
         """Remind Bazza when He will be banned"""
+        target = dt.date(2020, 11, 8)
         today = dt.date.today()
-        delta = today - self.target
+        delta = today - target
         await ctx.send(f"BAN BAZZA L'8 NOVEMBRE\nCountdown: {delta.days}")
 
 

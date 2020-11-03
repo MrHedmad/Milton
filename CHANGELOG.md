@@ -10,7 +10,15 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
-## [0.2.0-beta] - 2020-11-03
+## [0.2.1] - 2020-11-03
+### Removed
+- Removed the Arctic Cog.
+
+### Fixed
+- Some small backend fixes.
+
+
+## [0.2.0] - 2020-11-03
 ### Added
 - Support for the #Kick Bazza on the 8th of November movement.
 - Added the Arctic Cog for Arctic-specifc commands.
