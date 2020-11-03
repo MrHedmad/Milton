@@ -34,6 +34,7 @@ to_load = [
     "meta",
     "toys",
     "birthday",
+    "arctic",
 ]
 
 for cog in to_load:

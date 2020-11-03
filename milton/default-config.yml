@@ -12,6 +12,8 @@ bot:
   owner_id: null
   # >> Timeout for listening to pagination instructions (seconds)
   pagination_timeout: 300
+  # >> Set the test server. Useful to test some restricted commands.
+  test_server_id: 574203165495525387
 
 database:
   # >> Set the name for the database in mongoDB. Can be useful if multiple

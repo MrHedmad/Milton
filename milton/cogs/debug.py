@@ -23,7 +23,6 @@ class DebugCog(commands.Cog, name="Debug"):
         out = Paginator(title="Powered by www.baconipsum.com")
         endpt = "https://baconipsum.com/api/"
 
-        # This should probably be asyncronous
         response = await fetch(
             self.bot.http_session,
             endpt,

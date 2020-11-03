@@ -1,3 +1,4 @@
+import datetime as dt
 import logging
 import random
 from pathlib import Path
@@ -8,6 +9,8 @@ from discord.ext import tasks
 
 from milton.bot import Milton
 from milton.config import CONFIG
+from milton.utils import checks
+from milton.utils import tasks
 from milton.utils.paginator import Paginator
 from milton.utils.tools import get_random_line
 
@@ -69,5 +72,54 @@ class Toys(commands.Cog, name="Toys"):
         await ctx.send(embed=embed)
 
 
+class BanBazza(commands.Cog):
+    """Ban Bazza l'8 Novembre"""
+
+    def __init__(self, bot) -> None:
+        self.bot = bot
+        self.home = self.bot.get_channel(311200788858798080)
+        self.target = dt.date(2020, 11, 8)
+        self.bazza_id = 485910756324540437
+        self.ban_bazza.start()
+
+    def cog_unload(self):
+        self.ban_bazza.stop()
+
+    @tasks.loop(at=dt.time(hour=10), hours=24)
+    async def ban_bazza(self):
+        """Ban Bazza the 8th of November. He asked for it!"""
+        today = dt.date.today()
+        if self.target == today:
+            # Banning Bazza
+            bazza_user = self.bot.get_user(self.bazza_id)
+            if bazza_user:
+                await self.bot.ban(bazza_user, reason="Tanti Auguri Bazza!!!")
+                await self.home.send("Bazza é stato bannato! Yay!")
+            self.stop()
+            return
+
+        delta = today - self.target
+        await self.home.send(f"BAN BAZZA L'8 NOVEMBRE\nCountdown: {delta.days}")
+
+    @ban_bazza.before_loop
+    async def bazza_before(self):
+        await self.bot.wait_until_ready()
+        await self.home.send(
+            embed=discord.Embed(
+                title="Ban Bazza Reminder",
+                description=f"Pronto a ricordare a @<{self.bazza_id}> che deve essere Bannato l'8 Novembre. Prova `bzban`",
+            )
+        )
+
+    @commands.command(name="bzban", aliases=("banbazza", "bazzaban"))
+    @commands.check_any(checks.in_guild(311200788858798080), checks.in_test_guild())
+    async def bazza_check(self, ctx):
+        """Remind Bazza when He will be banned"""
+        today = dt.date.today()
+        delta = today - self.target
+        await ctx.send(f"BAN BAZZA L'8 NOVEMBRE\nCountdown: {delta.days}")
+
+
 def setup(bot):
     bot.add_cog(Toys(bot))
+    bot.add_cog(BanBazza(bot))

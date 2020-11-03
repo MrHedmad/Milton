@@ -10,7 +10,18 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
-## [0.1.1-beta] - 2020-10-07
+## [0.2.0-beta] - 2020-11-03
+### Added
+- Support for the #Kick Bazza on the 8th of November movement.
+- Added the Arctic Cog for Arctic-specifc commands.
+- Added a utility that searches for a Hide and Seek locations. Powered by Augurian.
+- Added some backend checks.
+
+### Changed
+- !! Rolled back Python3.9 support. The ecosystem is too unprepared for now, and many packages do not have wheels already released.
+- Small changes here and there.
+
+## [0.1.1] - 2020-10-07
 ### Changed
 - !! Upgraded from python 3.8 to python 3.9
 
