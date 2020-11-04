@@ -10,12 +10,14 @@ from typing import Mapping
 from typing import Optional
 
 from aioconsole import ainput
+from discord.errors import HTTPException
 from discord.ext import commands
 from discord.ext import tasks
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
 from discord.ext.commands.errors import ExtensionNotFound
 from discord.ext.commands.errors import ExtensionNotLoaded
 from discord.ext.commands.errors import NoEntryPointError
+from tabulate import tabulate
 
 from milton.bot import Milton
 from milton.utils.tools import glob_word
@@ -189,5 +191,48 @@ def setup(bot):
             else:
                 print(f"Successfully reloaded extension {ext}")
         print("Finished reloading extensions")
+
+    @interface.add_option
+    async def listguilds():
+        """List the guild that the bot is currently in"""
+        print("Guilds MLA is currently in:")
+        guilds = list(interface.bot.guilds)
+        data = (
+            [len(x.members) for x in guilds],
+            [x.id for x in guilds],
+            [x.name for x in guilds],
+        )
+        print(
+            tabulate(
+                # Data has to be rotated 90 degrees
+                [list(x) for x in zip(*data[::-1])],
+                headers=("Display Name", "Snowflake", "Member Count"),
+                tablefmt="grid",
+            )
+        )
+
+    @interface.add_option
+    async def leaveguild(id=None):
+        """Leave a guild Milton is in"""
+        if id is None:
+            print("Did not specify an ID")
+            return
+
+        try:
+            id = int(id)
+        except ValueError:
+            print("Cannot cast id to int - is it numeric?")
+
+        guilds = list(interface.bot.guilds)
+        ids = [x.id for x in guilds]
+        if id not in ids:
+            print("Id not recognized. Is it an ID of a guild Milton is in?")
+
+        target = interface.bot.get_guild(id)
+        try:
+            await target.leave()
+        except HTTPException:
+            print("Leaving guild failed. Milton might be the owner of the guild.")
+        print(f"Left guilds {target.name} with snowflake {target.id}")
 
     bot.add_cog(interface)

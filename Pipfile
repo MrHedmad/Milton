@@ -16,6 +16,7 @@ aiohttp = "*"
 cchardet = "*"
 aiodns = "*"
 async-timeout = "*"
+tabulate = "*"
 
 [dev-packages]
 

@@ -10,6 +10,12 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [0.2.2] - 2020-11-04
+### Added
+- Added a CLI command to list guilds that Milton can see.
+- Added a CLI command to leave a guild Milton is in based on its ID.
+
+
 ## [0.2.1] - 2020-11-03
 ### Removed
 - Removed the Arctic Cog.
@@ -21,7 +27,7 @@ The `beta` tag is added when the bot has not been in production for long. Can be
 ## [0.2.0] - 2020-11-03
 ### Added
 - Support for the #Kick Bazza on the 8th of November movement.
-- Added the Arctic Cog for Arctic-specifc commands.
+- Added the Arctic Cog for Arctic-specific commands.
 - Added a utility that searches for a Hide and Seek locations. Powered by Augurian.
 - Added some backend checks.
 
