@@ -106,21 +106,26 @@ class BanBazza(commands.Cog):
         await self.bot.wait_until_ready()
         bazza_id = 485910756324540437
         home = self.bot.get_channel(311200788858798080)
-        await home.send(
-            embed=discord.Embed(
-                title="Ban Bazza Reminder",
-                description=f"Pronto a ricordare a @<{bazza_id}> che deve essere Bannato l'8 Novembre. Prova `bzban`",
+        if home:
+            await home.send(
+                embed=discord.Embed(
+                    title="Ban Bazza Reminder",
+                    description=f"Pronto a ricordare a Bazza che deve essere Bannato l'8 Novembre. Prova `bzban`",
+                )
             )
-        )
 
     @commands.command(name="bzban", aliases=("banbazza", "bazzaban"))
     @commands.check_any(checks.in_guild(311200788858798080), checks.in_test_guild())
     async def bazza_check(self, ctx):
         """Remind Bazza when He will be banned"""
-        target = dt.date(2020, 11, 8)
-        today = dt.date.today()
-        delta = today - target
-        await ctx.send(f"BAN BAZZA L'8 NOVEMBRE\nCountdown: {delta.days}")
+        target = dt.datetime(2020, 11, 8, 11)
+        today = dt.datetime.now()
+        delta = today.replace(microsecond=0) - target
+        if delta.days < -1:
+            await ctx.send(f"BAN BAZZA L'8 NOVEMBRE\nCountdown: {delta.days}")
+            return
+        delta = target - today.replace(microsecond=0)
+        await ctx.send(f"BAN BAZZA L'8 NOVEMBRE\nCountdown: {delta}")
 
 
 def setup(bot):

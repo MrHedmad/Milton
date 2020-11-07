@@ -10,6 +10,11 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [0.2.3] - 2020-11-07
+### Changed
+- More precise countdown for `bzban` as we are nearing *the time*.
+
+
 ## [0.2.2] - 2020-11-04
 ### Added
 - Added a CLI command to list guilds that Milton can see.
