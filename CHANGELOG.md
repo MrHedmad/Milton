@@ -10,6 +10,11 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [0.3.0] - 2020-11-07
+### Removed
+- Bazza was (un)successfully banned. Removed the `bzban` command.
+
+
 ## [0.2.3] - 2020-11-07
 ### Changed
 - More precise countdown for `bzban` as we are nearing *the time*.
