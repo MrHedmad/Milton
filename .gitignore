@@ -139,6 +139,7 @@ config.yml
 
 # Ignore vscode settings
 .vscode
+*.code-workspace
 
 # Place still-in-progress things here
 Dockerfile
