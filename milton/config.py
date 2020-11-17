@@ -1,10 +1,9 @@
-"""Load configuration for the bot.
+"""This file loads the configuration for the bot.
 
 This is heavily based on the discord python server bot.
 """
 import logging
 from pathlib import Path
-from typing import Mapping
 
 import yaml
 from box import Box
@@ -28,4 +27,6 @@ except FileNotFoundError as err:
     log.info("No config file found. Using default parameters")
     CONFIG = {}
 
-CONFIG = Box(recursive_update(_DEFAULT_CONFIG, CONFIG), frozen_box=True)
+# I use a box to avoid accidentally updating + using the cool class attribute
+# access which in my opinion makes perfect sense for static variables.
+CONFIG: Box = Box(recursive_update(_DEFAULT_CONFIG, CONFIG), frozen_box=True)

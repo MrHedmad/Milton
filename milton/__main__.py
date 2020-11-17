@@ -22,19 +22,12 @@ milton = Milton(
 )
 
 # Add cogs and extensions to be loaded
-
 log.debug("Loading default extensions")
 
-to_load = [
-    # Essential extensions
-    "cli",
-    "error_handler",
-    "debug",
-    # Other extensions
-    "meta",
-    "toys",
-    "birthday",
-]
+# Essential extensions
+to_load = ["cli", "error_handler", "debug"]
+
+to_load.extend(CONFIG.bot.startup_extensions)
 
 for cog in to_load:
     try:

@@ -1,9 +1,6 @@
 import asyncio
 import logging
 from contextlib import suppress
-from typing import Any
-from typing import AnyStr
-from typing import List
 from typing import Optional
 
 import discord
@@ -15,13 +12,6 @@ from discord.ext import commands
 from milton.config import CONFIG
 
 log = logging.getLogger(__name__)
-
-
-class ParserError(Exception):
-    """Raised when the parser encounters an error"""
-
-    pass
-
 
 DELETE_EMOJI = CONFIG.emojis.trash
 NEXT_EMOJI = CONFIG.emojis.next
@@ -41,28 +31,43 @@ DEFAULT_EMOJIS = (
 
 
 class Paginator(commands.Paginator):
+    """Helper that builds and sends messages to channels.
+
+    Allows interactive pagination with emojis. This class is heavily copied
+    from the Python Discord bot.
+
+    Args:
+        prefix: A prefix to give to each page of the resulting embed.
+        suffix: A suffix to give to each page of the resulting embed.
+        max_size: The maximum size of a page. Defaults to discord's maximum
+            message size, 2000 characters.
+        force_embed: By default, one-page embeds are sent as a normal message.
+            Should it be sent as an embed instead?
+        title: An optional title for the embed.
     """
-    Helper that builds and sends messages to channels.
-
-    Allows pagination.
-
-    Attr:
-        """
 
     def __init__(
         self,
-        prefix: Optional[str] = "",
-        suffix: Optional[str] = "",
-        max_size: Optional[int] = 2000,
-        force_embed: Optional[bool] = False,
+        prefix: str = "",
+        suffix: str = "",
+        max_size: int = 2000,
+        force_embed: bool = False,
         title: Optional[str] = None,
     ) -> None:
+        # As this is used a lot, I expose the parent class arguments explicitly
         super().__init__(prefix, suffix, max_size)
         self.force_embed = force_embed
         self.title = title
 
     async def paginate(self, ctx: Messageable):
-        """Paginator pagination plus emojis"""
+        """Send and start to paginate this message
+
+        If message is just one page, does not provide interactive pagination,
+        as it's useless.
+
+        Args:
+            ctx: The messageable channel to send the message to.
+        """
         # Yanked and modified from the python discord bot paginator
         def event_check(reaction_: discord.Reaction, user_: discord.Member) -> bool:
             """Make sure that this reaction is what we want to operate on."""

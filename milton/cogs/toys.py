@@ -5,12 +5,11 @@ from pathlib import Path
 
 import discord
 from discord.ext import commands
-from discord.ext import tasks
+from discord.ext.commands.context import Context
 
 from milton.bot import Milton
 from milton.config import CONFIG
-from milton.utils import checks
-from milton.utils import tasks
+from milton.utils.errors import UserInputError
 from milton.utils.paginator import Paginator
 from milton.utils.tools import get_random_line
 
@@ -19,30 +18,32 @@ log = logging.getLogger(__name__)
 
 
 class Toys(commands.Cog, name="Toys"):
-    """Cog for implementing toy functions"""
+    """Cog that hosts toy commands."""
 
-    def __init__(self, bot) -> None:
-        self.bot = bot
+    def __init__(self, bot: Milton) -> None:
+        self.bot: Milton = bot
 
     @commands.command()
-    async def roll(self, ctx, dice):
-        """Roll some dice, like 1d20, or 100d1000!"""
+    async def roll(self, ctx: Context, dice: str):
+        """Roll some dice, like 1d20, or 100d1000!
 
+        Accepts any combination of `<nr. dice>d<faces>`, up to 100 dice with
+        50000 faces.
+        """
         out = Paginator()
 
         try:
             number, sides = [abs(int(x)) for x in dice.split("d")]
         except (IndexError, ValueError):
-            out.add_line("Cannot parse message. Please restate. Try: $roll 1d20")
-            return await out.paginate(ctx)
+            raise UserInputError(
+                "Cannot parse message. Please restate. Try: $roll 1d20"
+            )
 
         if number > 100:
-            out.add_line("I'm sorry, I cannot roll that many dice.")
-            return await out.paginate(ctx)
+            raise UserInputError("I'm sorry, I cannot roll that many dice.")
 
         if sides > 50000:
-            out.add_line("I'm sorry, I cannot roll dice that big.")
-            return await out.paginate(ctx)
+            raise UserInputError("I'm sorry, I cannot roll dice that big.")
 
         message = "Rolling {}: ".format((str(number) + "d" + str(sides)))
 
@@ -64,8 +65,11 @@ class Toys(commands.Cog, name="Toys"):
         return await out.paginate(ctx)
 
     @commands.command()
-    async def fact(self, ctx):
-        """Send a totally accurate fact"""
+    async def fact(self, ctx: Context):
+        """Send a totally accurate fact.
+
+        Fact is guaranteed(tm) to be 99.8% accurate.
+        """
         embed = discord.Embed(
             description=get_random_line("./milton/resources/facts.txt")
         )

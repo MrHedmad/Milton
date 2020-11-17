@@ -1,4 +1,5 @@
 # Implements the birthday cog
+# TODO: This is bad and I cannot be bothered to make it better!
 import datetime as dt
 import logging
 from datetime import datetime
@@ -19,7 +20,11 @@ log = logging.getLogger(__name__)
 def birth_from_str(date: Optional[str]) -> Optional[dt.datetime]:
     """Returns a datetime object by parsing a date
 
-    A wrapper to handle the optional presence of a year
+    A wrapper to handle the optional presence of a year.
+
+    Args:
+        date: string that can be parsed in a date by strptime. If None, this
+            function returns None.
     """
     if date:
         if len(date) == 5:
@@ -33,8 +38,12 @@ def birth_from_str(date: Optional[str]) -> Optional[dt.datetime]:
     return None
 
 
-def time_to_bday(date: Optional[str]) -> Optional[dt.datetime]:
-    """Returns the time to the next birthday"""
+def time_to_bday(date: Optional[str]) -> Optional[int]:
+    """Returns the time from now to the next date in days.
+
+    Args:
+        Date: A parseable string to check.
+    """
     now = datetime.now()
     if (date := birth_from_str(date)) :
         date = date.replace(year=now.year)
@@ -46,7 +55,11 @@ def time_to_bday(date: Optional[str]) -> Optional[dt.datetime]:
 
 
 def calculate_age(date: Optional[str]) -> Optional[int]:
-    """Returns the age of the person given their birthday"""
+    """Returns the age of the person given their birthday
+
+    Args:
+        date: A parseable string to check.
+    """
     born = birth_from_str(date)
     today = dt.date.today()
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
@@ -209,7 +222,6 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
             date = clean_date(entry["value"])
 
             dateobj = birth_from_str(date)
-            now = datetime.now()
 
             user = guild.get_member(user_id)
             if not (user is not None and date is not None):

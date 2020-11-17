@@ -10,6 +10,21 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [0.4.0-beta] - 2020-11-17
+### Added
+- Added some examples.
+- Added a whole lot of documentation strings.
+
+### Changed
+- Changed a whole lot of configuration strings.
+- Moved the description for the changelog (former changelog_typing.md) to the changelog_parser.py file.
+- The Toys cog now uses the UserInputError exception correctly.
+
+### Fixed
+- Fixed a LOT of unused imports. *So many unused imports*.
+- Fixed some type hits. Who knew what `Optional` meant?
+
+
 ## [0.3.0] - 2020-11-07
 ### Removed
 - Bazza was (un)successfully banned. Removed the `bzban` command.

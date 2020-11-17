@@ -4,7 +4,6 @@ Mostly based on (aka completely yanked from) this example:
 https://gist.github.com/EvieePy/7822af90858ef65012ea500bcecf1612
 """
 import logging
-import sys
 import traceback
 
 import discord
@@ -16,20 +15,21 @@ log = logging.getLogger(__name__)
 
 
 class CommandErrorHandler(commands.Cog):
+    """A cog that handles command errors"""
+
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(
+        self, ctx: commands.Context, error: commands.CommandError
+    ):
         """The event triggered when an error is raised while invoking a command.
-        Parameters
-        ------------
-        ctx: commands.Context
-            The context used for command invocation.
-        error: commands.CommandError
-            The Exception raised.
-        """
 
+        Args:
+            ctx: The context used for command invocation.
+            error: The Exception raised.
+        """
         log.debug("The Error Handler was invoked to handle an error")
 
         trace = "".join(
@@ -50,7 +50,6 @@ class CommandErrorHandler(commands.Cog):
         # Allows us to check for original exceptions raised and sent to CommandInvokeError.
         # If nothing is found. We keep the exception passed to on_command_error.
         error = getattr(error, "original", error)
-
         ignored = (commands.CommandNotFound,)
 
         if isinstance(error, ignored):

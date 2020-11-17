@@ -1,10 +1,6 @@
 """Provide a cli for additional control"""
-import copy
 import logging
-from asyncio.tasks import current_task
-from difflib import get_close_matches
 from inspect import cleandoc
-from typing import AnyStr
 from typing import Coroutine
 from typing import Mapping
 from typing import Optional
@@ -26,7 +22,7 @@ from milton.utils.tools import initialize_empty
 log = logging.getLogger(__name__)
 
 
-def clean_docstring(docs: AnyStr) -> AnyStr:
+def clean_docstring(docs: str) -> str:
     """Cleans the docstring of some command
 
     Cleans the indentation with `cleandoc` from `inspect`, and
@@ -43,11 +39,11 @@ class CommandInterface(commands.Cog):
 
     global prompt  # I know, I know - who cares
 
-    def __init__(self, bot: Milton, prompt: AnyStr = ">> ") -> None:
+    def __init__(self, bot: Milton, prompt: str = ">> ") -> None:
         self.bot: Milton = bot
         self._actions: Mapping = {}
         self._descriptions: Mapping = {}
-        self._prompt: AnyStr = prompt
+        self._prompt: str = prompt
 
         self.add_option(self.help_option, trigger="help", desc="Print this list")
 
@@ -65,8 +61,8 @@ class CommandInterface(commands.Cog):
     def add_option(
         self,
         action: Coroutine,
-        desc: Optional[AnyStr] = None,
-        trigger: Optional[AnyStr] = None,
+        desc: Optional[str] = None,
+        trigger: Optional[str] = None,
     ) -> None:
         trigger = trigger or action.__name__
         desc = desc or cleandoc(action.__doc__) or "N/A"
@@ -94,7 +90,7 @@ class CommandInterface(commands.Cog):
             log.debug(f'Got a CLI command, "{command}"')
             command = command.lower().split()
 
-            globbed = glob_word(command[0], self._actions)
+            globbed = glob_word(command[0], self._actions) or command[0]
 
             if globbed != command[0]:
                 print(f'Globbed from "{command[0]}" to "{globbed}".')

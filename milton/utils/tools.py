@@ -1,35 +1,35 @@
-"""Collection of utility functions"""
+"""Collection of utility functions used around the bot"""
 import logging
 import random
-from ast import Str
-from datetime import date
 from datetime import datetime
 from datetime import time
 from datetime import timedelta
 from difflib import get_close_matches
-from itertools import zip_longest
 from pathlib import Path
-from typing import AnyStr
 from typing import List
 from typing import Mapping
 from typing import Union
 
 import async_timeout
 from aiohttp import ClientSession
-from discord import TextChannel
-from discord.client import Client
 
 log = logging.getLogger(__name__)
 
 # Yanked from the python discord bot
-def recursive_update(original: Mapping, new: Mapping) -> None:
+def recursive_update(original: Mapping, new: Mapping) -> Mapping:
     """Recursively update nested dictionaries
 
     Helper method which implements a recursive `dict.update`
     method, used for updating the original configuration with
     configuration specified by the user.
-    """
 
+    Args:
+        original: A mapping to be updated recursively.
+        new: A mapping used to update the original with, recursively.
+
+    Returns:
+        The updated mapping.
+    """
     for key, value in original.items():
         if key not in new:
             continue
@@ -44,166 +44,53 @@ def recursive_update(original: Mapping, new: Mapping) -> None:
     return original
 
 
-def get_random_line(file: Union[AnyStr, Path]) -> AnyStr:
-    """Returns a random line in a file. Ignores empty lines."""
-    with Path(file).open("r") as f:
+def get_random_line(path: Union[str, Path]) -> str:
+    """Returns a random line in a file. Ignores empty lines.
+
+    The implementation has to load the whole file into memory, therefore is not
+    suited for very very large files.
+
+    Args:
+        path: Either a string or a :class:`pathlib.Path` that represents the
+            path to the file to open.
+
+    Returns:
+        The line retrieved from the file as a string.
+    """
+    with Path(path).open("r") as f:
         items = [a for a in f if a != ""]
     return random.choice(items)
 
 
-def initialize_empty(path: Union[AnyStr, Path], content: AnyStr = "{}") -> True:
-    """Create empty .json file to target path."""
+def initialize_empty(path: Union[str, Path], content: str = "{}") -> True:
+    """Create an empty file to target path.
+
+    Args:
+        path: Either a string or a :class:`pathlib.Path` that represents the
+            path to the file to open.
+
+    Returns:
+        True
+    """
     log.debug(f"Creating an empty file @ {path} with {content} content")
     with Path(path).open("w+") as f:
         f.write(content)
     return True
 
 
-def fn(number: Union[int, float], threshold: int = 100_000, decimals: int = 2) -> str:
-    """Short for 'format number'.
+def glob_word(query: str, words: List[str], *args, **kwargs):
+    """Return the closests matching word in a list to a query
 
-    Takes a number and formats it into human-readable form.
-    If it's larger than threshold, formats it into a more compact form.
+    Other parameters are sent to the get_close_matches function.
 
     Args:
-        number: float or int
-            Number to format
-        threshold: int
-            Threshold under which not to format. Defaults at 100_000
-        decimals: int
-            Number of decimal places to give to the number before formatting.
+        query: The string to search for close matched
+        words: The list of possible matches
 
     Returns:
-        String with formatted number.
+        The matched string or None if nothing is found.
     """
-    if number < threshold:
-        return str(round(float(number), decimals))
-    return str(number, decimals)
-
-
-async def push(channel: TextChannel, message: List[str]):
-    """Push a message to a channel.
-
-    channel
-        Channel to forward message to.
-    message
-        List of strings to send to channel (from a MsgBuilder probably)
-    """
-    log.debug(f"Pushing a message of lenght {len(message)} to {channel.id}")
-    for item in message:
-        await channel.send(item)
-
-
-class MsgBuilder:
-    """Class to build messages to push to chat.
-
-    Parses lists containing messages to send to chat.
-    It contains them inside a list of lists for easier parsing.
-    """
-
-    def __init__(self):
-        # When adding to msg, remember to only add lists of one or more strings
-        self.msg = []
-
-    def add(self, line: str):
-        """Add a new line to be parsed."""
-        if isinstance(line, str):
-            line = [line]
-        self.msg.append(line)
-
-    def append(self, line: str, sep: str = ""):
-        """Appends line to the end of last string in the message.
-
-        Args:
-            line: str
-                String to append.
-            sep: str
-                Separator between string and string to be appended.
-        """
-        if not self.msg:
-            self.add(line)
-        else:
-            self.msg[-1][-1] += sep + line
-
-    def prepend(self, line: str, sep: str = ""):
-        """Prepends line to the start of last string in the message.
-
-        Args:
-            line: str
-                String to append.
-            sep: str
-                Separator between string and string to be prepended.
-        """
-        if not self.msg:
-            self.add(line)
-        else:
-            self.msg[-1][-1] = line + sep + self.msg[-1][-1]
-
-    def parse(self):
-        """Parses itself as a list of the fewest number of strings possible.
-
-        Doesn't exceed 2000 characters while creating strings to push to chat
-        in order to follow Discord's 2000 character limit per message.
-        """
-        messages = []
-        formatted = ""
-        for row in self.msg:
-            if len(formatted + " ".join(row)) <= 2000:
-                formatted += " ".join(row) + "\n"
-            else:
-                messages.append(formatted.rstrip())
-                formatted = " ".join(row) + "\n"
-        messages.append(formatted.rstrip())
-        log.debug(f"Parsed a message of length {len(messages)}")
-        return messages
-
-    def pretty_parse(self, padding=2):
-        """Pretty parse the list of words as columns.
-
-        Handles giving each string the correct number of spaces,
-        plus adds the back-ticks to mark this message as code (otherwise
-        it kind of defeats the purpose of adding the spaces).
-
-        WARNING: This does not check for the 2k character limit like parse()
-        does.
-
-        Args:
-            padding: int
-                Spaces to add in addition to those to make columns equal.
-                Defaults to 2
-        """
-        # Improvement: This doesn't check for the 2k character limit.
-        col_widths = [
-            max(map(len, col)) for col in zip_longest(*self.msg, fillvalue="")
-        ]
-        formatted = ""
-        for row in self.msg:
-            formatted += ("" + padding * " ").join(
-                (val.ljust(width) for val, width in zip(row, col_widths))
-            )
-            formatted += "\n"
-        if len(formatted) > 2000:
-            log.warning("Formatted string from prettyparse exceeds 2k char limit")
-        log.debug("Parsed a pretty message")
-        return ["```" + formatted.rstrip() + "```"]
-
-
-class MsgParser:
-    """Small utility to parse messages"""
-
-    def __init__(self, message: str):
-        message = message.split()  # This splits @ one or more whitespaces
-        self.command = message[0]
-        self.args = message[1:]
-
-
-def glob_word(word: AnyStr, words: List[AnyStr], *args, **kwargs):
-    """Return the closests matching word in a list
-
-    If not found, returns the original word. Other parameters are sent to
-    the get_close_matches function.
-    """
-    globbed = get_close_matches(word, words, 1, *args, **kwargs) or word
+    globbed = get_close_matches(query, words, 1, *args, **kwargs) or None
     # Need to do this in two steps as `get_close_matches` can return
     # an empty list
     if isinstance(globbed, list):
@@ -213,17 +100,29 @@ def glob_word(word: AnyStr, words: List[AnyStr], *args, **kwargs):
     return globbed
 
 
-async def fetch(session: ClientSession, url: str, params: Mapping):
+async def fetch(session: ClientSession, url: str, params: Mapping = {}):
+    """Fetch a result from an url using an aiohttp client session
+
+    Args:
+        session: The session to be used for the http call.
+        url: The url to be fetched.
+        params: Any params that are passed to the request.
+
+    Returns:
+        The fetched string.
+    """
     async with async_timeout.timeout(10):
         async with session.get(url, params=params) as response:
             return await response.text()
 
 
 def timediff(now: time, then: time) -> timedelta:
-    """Calculates the difference between two times
+    """Calculates the difference between two times.
 
-    Returns now - then
+    Returns:
+        The time difference between now and then.
     """
+    # You cannot subtract times directly, so I just do this horribleness
     today = datetime.now().date()
     now = datetime.combine(today, now)
     then = datetime.combine(today, then)

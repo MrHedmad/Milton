@@ -1,22 +1,19 @@
 """Adds some errors that will be handled by the error handler"""
-from typing import AnyStr
 from typing import Optional
 
 
 class MiltonError(Exception):
-    """Class that is parent of all other Milton-specific errors
+    """Class that is parent of all other Milton-specific errors.
 
-    Takes an optional message which can be used further in processing.
+    Args:
+        msg: An optional message that describes the error.
     """
 
-    def __init__(self, msg: Optional[AnyStr] = None) -> None:
+    def __init__(self, msg: Optional[str] = None) -> None:
         self.msg = msg
 
 
 class UserInputError(MiltonError):
-    """Raised when an user sent the wrong input.
-
-    It is parsed by the Error Handler.
-    """
+    """Raised when an user sent the wrong input."""
 
     pass

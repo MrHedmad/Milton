@@ -14,7 +14,7 @@ _________\///______________\///_______\//////////////_____\///________\///__
 
 
 def make_intro():
-    """Show the introduction of the bot on startup"""
+    """Prints the introduction for the bot"""
     print(INTRO)
     print("")
     print("Welcome to the Milton Library assistant.")
