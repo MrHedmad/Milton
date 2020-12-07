@@ -3,9 +3,9 @@ import logging
 import discord
 from discord.ext.commands.errors import ExtensionError
 
-from milton.bot import _get_prefix
-from milton.bot import Milton
-from milton.config import CONFIG
+from milton.core.bot import _get_prefix
+from milton.core.bot import Milton
+from milton.core.config import CONFIG
 
 log = logging.getLogger(__name__)
 
@@ -24,12 +24,17 @@ milton = Milton(
 # Add cogs and extensions to be loaded
 log.debug("Loading default extensions")
 
+essentials = ["cli", "error_handler", "debug"]
+
 # Essential extensions
-to_load = ["cli", "error_handler", "debug"]
+for cog in essentials:
+    try:
+        milton.load_extension(f"milton.core.cogs.{cog}")
+    except ExtensionError as e:
+        log.exception(e)
+        continue
 
-to_load.extend(CONFIG.bot.startup_extensions)
-
-for cog in to_load:
+for cog in CONFIG.bot.startup_extensions:
     try:
         milton.load_extension(f"milton.cogs.{cog}")
     except ExtensionError as e:

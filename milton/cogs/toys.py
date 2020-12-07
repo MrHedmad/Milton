@@ -7,9 +7,9 @@ import discord
 from discord.ext import commands
 from discord.ext.commands.context import Context
 
-from milton.bot import Milton
-from milton.config import CONFIG
-from milton.utils.errors import UserInputError
+from milton.core.bot import Milton
+from milton.core.config import CONFIG
+from milton.core.errors import MiltonInputError
 from milton.utils.paginator import Paginator
 from milton.utils.tools import get_random_line
 
@@ -35,15 +35,15 @@ class Toys(commands.Cog, name="Toys"):
         try:
             number, sides = [abs(int(x)) for x in dice.split("d")]
         except (IndexError, ValueError):
-            raise UserInputError(
+            raise MiltonInputError(
                 "Cannot parse message. Please restate. Try: $roll 1d20"
             )
 
         if number > 100:
-            raise UserInputError("I'm sorry, I cannot roll that many dice.")
+            raise MiltonInputError("I'm sorry, I cannot roll that many dice.")
 
         if sides > 50000:
-            raise UserInputError("I'm sorry, I cannot roll dice that big.")
+            raise MiltonInputError("I'm sorry, I cannot roll dice that big.")
 
         message = "Rolling {}: ".format((str(number) + "d" + str(sides)))
 

@@ -4,7 +4,10 @@ from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from milton.config import CONFIG
+from milton.core.config import CONFIG
+
+# Save the path to here
+ROOT = Path(__file__).parent
 
 # Setup logging
 log = logging.getLogger("milton")  # Keep this at the module level name
