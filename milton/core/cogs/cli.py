@@ -15,7 +15,7 @@ from discord.ext.commands.errors import ExtensionNotLoaded
 from discord.ext.commands.errors import NoEntryPointError
 from tabulate import tabulate
 
-from milton.bot import Milton
+from milton.core.bot import Milton
 from milton.utils.tools import glob_word
 from milton.utils.tools import initialize_empty
 
@@ -230,5 +230,12 @@ def setup(bot):
         except HTTPException:
             print("Leaving guild failed. Milton might be the owner of the guild.")
         print(f"Left guilds {target.name} with snowflake {target.id}")
+
+    @interface.add_option
+    async def migratebirthdays():
+        """Migrate the old birthdays to the new database structure"""
+        print("Migrating guild configurations")
+        for guild in interface.bot.guilds:
+            guild_id = guild.id
 
     bot.add_cog(interface)

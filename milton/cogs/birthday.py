@@ -8,10 +8,12 @@ from typing import Optional
 import motor.motor_asyncio as aiomotor
 from discord.ext import commands
 
-from milton.bot import Milton
-from milton.config import CONFIG
+from milton.core.bot import Milton
+from milton.core.config import CONFIG
+from milton.core.database import milton_guilds
+from milton.core.database import MiltonGuild
+from milton.core.errors import MiltonInputError
 from milton.utils import tasks
-from milton.utils.errors import UserInputError
 from milton.utils.paginator import Paginator
 
 log = logging.getLogger(__name__)
@@ -95,8 +97,6 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
 
     def __init__(self, bot: Milton) -> None:
         self.bot: Milton = bot
-        self.DBcoll: aiomotor.AsyncIOMotorCollection = self.bot.DB.birthdays
-
         self.check_birthdays_task.start()
 
     def cog_unload(self):
@@ -107,12 +107,9 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
         """Tasks the checking of the birthdays in a loop"""
         log.info("Checking today's birthdays...")
 
-        cursor = self.DBcoll.find({"type": {"$eq": "shout_channel"}})
-
-        async for entry in cursor:
-            guild_id = entry["guild_id"]
-            shout_channel = entry["value"]
-
+        async for guild_id, document in milton_guilds:
+            async with document as guild:
+                shout_channel = guild["bday_shout_channel"]
             if shout_channel:
                 await self.check_birthdays(guild_id)
 
@@ -125,24 +122,19 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
 
         Takes a guild_id of a guild THAT HAS SET THE SHOUT CHANNEL!!
         """
-        guild_id = str(guild_id)
-
-        entry = await self.DBcoll.find_one(
-            {"guild_id": {"$eq": guild_id}, "type": {"$eq": "shout_channel"}}
-        )
-
-        shout_channel_id = entry["value"]
+        async with MiltonGuild(guild_id) as guild:
+            shout_channel_id = guild["bday_shout_channel"]
 
         assert shout_channel_id is not None
 
         out = Paginator()
         today = dt.date.today()
 
-        cursor = self.DBcoll.find({"guild_id": guild_id, "type": "date"})
+        async with MiltonGuild(str(guild_id)) as guild:
+            docs = [(x, y) for x, y in guild["birthdays"].items()]
 
-        async for entry in cursor:
-            date = entry["value"]
-            user_id = entry["user_id"]
+        for entry in docs:
+            user_id, date = entry
 
             if not date:
                 continue
@@ -181,11 +173,8 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
                     )
                 )
 
-                self.DBcoll.update_one(
-                    {"guild_id": guild_id, "type": "shout_channel"},
-                    {"$set": {"value": None}},
-                    upsert=True,
-                )
+                async with MiltonGuild(guild_id) as guild:
+                    guild["bday_shout_channel"] = None
 
     @commands.guild_only()
     @commands.group(
@@ -210,16 +199,16 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
         guild_id = str(ctx.guild.id)
         guild = self.bot.get_guild(int(guild_id))
 
-        cursor = self.DBcoll.find(
-            {"guild_id": guild_id, "type": "date", "value": {"$ne": None}}
-        )
-
-        docs = await cursor.to_list(None)  # None means unlimited
-        docs = sorted(docs, key=lambda x: time_to_bday(x["value"]))
+        async with MiltonGuild(guild_id) as milton_guild:
+            if not milton_guild["birthdays"]:
+                await ctx.send("Nobody registered a birthday in this server, sorry.")
+                return
+            docs = [(x, y) for x, y in milton_guild["birthdays"].items()]
+        docs = sorted(docs, key=lambda x: time_to_bday(x[1]))
 
         for entry in docs:
-            user_id = int(entry["user_id"])
-            date = clean_date(entry["value"])
+            user_id = int(entry[0])
+            date = clean_date(entry[1])
 
             dateobj = birth_from_str(date)
 
@@ -260,7 +249,7 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
         try:
             birth_from_str(date)
         except ValueError:
-            raise UserInputError(
+            raise MiltonInputError(
                 (
                     "I cannot parse the date, sorry. Supported formats are DD-MM "
                     "and DD-MM-YYYY. Remember that single digits **must** be padded!"
@@ -268,7 +257,7 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
             )
 
         # If we get to here, the datetime is parseable.
-        # I'm saving it as STR just because so I dont have to add a new type
+        # I'm saving it as STR just because so I don't have to add a new type
         # in the parser for the dictionary
 
         guild_id = str(ctx.message.guild.id)
@@ -276,11 +265,8 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
 
         log.debug(f"Updating birthday of user {user_id} in guild {guild_id}")
 
-        await self.DBcoll.update_one(
-            {"type": "date", "guild_id": guild_id, "user_id": user_id},
-            {"$set": {"value": date}},
-            upsert=True,
-        )
+        async with MiltonGuild(guild_id) as guild:
+            guild["birthdays"].update({user_id: date})
 
         await ctx.send("Huzzah! I will now remember your birthday.")
 
@@ -292,11 +278,8 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
 
         log.debug(f"Removing birthday of user {user_id} in guild {guild_id}")
 
-        await self.DBcoll.update_one(
-            {"type": "date", "guild_id": guild_id, "user_id": user_id},
-            {"$set": {"value": None}},
-            upsert=True,
-        )
+        async with MiltonGuild(guild_id) as guild:
+            guild["birthdays"].update({user_id: None})
 
         await ctx.send("Sure! I forgot your birthday for this server. Bye!")
 
@@ -315,11 +298,8 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
             f"Setting birthday shout channel for guild {guild_id} to {channel_id}"
         )
 
-        await self.DBcoll.update_one(
-            {"guild_id": guild_id, "type": "shout_channel"},
-            {"$set": {"value": channel_id}},
-            upsert=True,
-        )
+        async with MiltonGuild(guild_id) as guild:
+            guild["bday_shout_channel"] = channel_id
 
         await ctx.send(
             (
@@ -338,15 +318,11 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
         Works in any channel, not necessarily that being screamed at.
         """
         guild_id = str(ctx.message.guild.id)
-        channel_id = str(ctx.channel.id)
 
         log.debug(f"Removing birthday shout channel for guild {guild_id}")
 
-        await self.DBcoll.update_one(
-            {"guild_id": guild_id, "type": "shout_channel"},
-            {"$set": {"value": None}},
-            upsert=True,
-        )
+        async with MiltonGuild(guild_id) as guild:
+            guild["bday_shout_channel"] = None
 
         await ctx.send(("I will be silent about birthdays from now on."))
 
@@ -359,10 +335,11 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
         """
         await ctx.send("Checking for birthdays...")
         guild_id = str(ctx.guild.id)
-        entry = await self.DBcoll.find_one(
-            {"guild_id": {"$eq": guild_id}, "type": {"$eq": "shout_channel"}}
-        )
-        if entry and entry["value"] is not None:
+
+        async with MiltonGuild(guild_id) as guild:
+            shout_channel = guild["bday_shout_channel"]
+
+        if shout_channel is not None:
             await self.check_birthdays(guild_id)
         else:
             await ctx.send("Sorry, you did not set a shout channel.")

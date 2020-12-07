@@ -9,7 +9,7 @@ import traceback
 import discord
 from discord.ext import commands
 
-from milton.utils import errors as merrors
+from milton.core import errors as merrors
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ class CommandErrorHandler(commands.Cog):
             except discord.HTTPException:
                 pass
 
-        elif isinstance(error, merrors.UserInputError):
+        elif isinstance(error, merrors.MiltonInputError):
             # Send feedback to user
             try:
                 await ctx.send(error.msg)

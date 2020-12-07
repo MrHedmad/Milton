@@ -9,8 +9,8 @@ from discord.errors import Forbidden
 from discord.ext import commands
 from discord.ext.commands.context import Context
 
-from milton.bot import Milton
-from milton.utils.errors import UserInputError
+from milton.core.bot import Milton
+from milton.core.errors import MiltonInputError
 from milton.utils.tools import get_random_line
 
 
@@ -113,7 +113,7 @@ class MetaCog(commands.Cog, name="Meta"):
                 try:
                     await ctx.author.add_roles(role)
                 except Forbidden:
-                    raise UserInputError("I do not have powers here... :(")
+                    raise MiltonInputError("I do not have powers here... :(")
                 embed = discord.Embed(title="You are now inside!")
                 embed.set_image(url=get_random_line("./milton/resources/insiders.txt"))
                 await ctx.send(embed=embed)
@@ -121,7 +121,7 @@ class MetaCog(commands.Cog, name="Meta"):
                 try:
                     await ctx.author.remove_roles(role)
                 except Forbidden:
-                    raise UserInputError("I do not have powers here... :(")
+                    raise MiltonInputError("I do not have powers here... :(")
                 embed = discord.Embed(title="You are no longer inside.")
                 embed.set_image(
                     url=get_random_line("./milton/resources/noinsiders.txt")

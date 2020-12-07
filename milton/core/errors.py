@@ -13,7 +13,7 @@ class MiltonError(Exception):
         self.msg = msg
 
 
-class UserInputError(MiltonError):
+class MiltonInputError(MiltonError):
     """Raised when an user sent the wrong input."""
 
     pass

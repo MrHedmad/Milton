@@ -9,7 +9,7 @@ from discord.abc import Messageable
 from discord.embeds import EmptyEmbed
 from discord.ext import commands
 
-from milton.config import CONFIG
+from milton.core.config import CONFIG
 
 log = logging.getLogger(__name__)
 

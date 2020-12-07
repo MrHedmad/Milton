@@ -1,16 +1,22 @@
+import pprint
+
+from discord.abc import User
 from discord.ext import commands
 from discord.ext.commands.context import Context
 
-from milton.bot import Milton
+from milton.core.bot import Milton
+from milton.core.database import MiltonUser
+from milton.core.errors import MiltonInputError
 from milton.utils.paginator import Paginator
 from milton.utils.tools import fetch
+from milton.utils.tools import id_from_mention
 
 
 class DebugCog(commands.Cog, name="Debug"):
     """"""
 
     def __init__(self, bot) -> None:
-        self.bot = bot
+        self.bot: Milton = bot
 
     def cog_check(self, ctx: Context):
         # Assure that these commands may only be executed from the owner of the
@@ -25,11 +31,11 @@ class DebugCog(commands.Cog, name="Debug"):
         generates meaty fillers.
         """
         out = Paginator(title="Powered by www.baconipsum.com")
-        endpt = "https://baconipsum.com/api/"
+        endpoint = "https://baconipsum.com/api/"
 
         response = await fetch(
             self.bot.http_session,
-            endpt,
+            endpoint,
             params={
                 "type": "meat-and-filler",
                 "paras": 15,
@@ -39,6 +45,28 @@ class DebugCog(commands.Cog, name="Debug"):
         )
 
         for line in response.split("\n"):
+            out.add_line(line)
+        await out.paginate(ctx)
+
+    @commands.command()
+    async def inspect(self, ctx: Context, name: str):
+        """Shows someone's statistics"""
+
+        try:
+            id_, type_ = id_from_mention(name)
+        except ValueError:
+            raise MiltonInputError("Not a valid mention or ID")
+
+        member: User = self.bot.get_user(id_)
+        if not member:
+            raise MiltonInputError("Cannot Find User")
+
+        out = Paginator(force_embed=True, title=f"Data for user {member.name}")
+        async with MiltonUser(id_) as user:
+            formatted = pprint.pformat(user.data, indent=4)
+            print(formatted)
+        formatted = formatted.split("\n")
+        for line in formatted:
             out.add_line(line)
         await out.paginate(ctx)
 

@@ -13,13 +13,27 @@ from discord.ext import commands
 from discord.ext.commands.bot import when_mentioned
 from discord.ext.commands.bot import when_mentioned_or
 
-from milton.config import CONFIG
-from milton.utils.changelog_parser import Changelog
-from milton.utils.changelog_parser import make_changelog
-from milton.utils.changelog_parser import Version
-from milton.utils.intro import make_intro
+from milton import ROOT
+from milton.core.changelog_parser import Changelog
+from milton.core.changelog_parser import make_changelog
+from milton.core.changelog_parser import Version
+from milton.core.config import CONFIG
 
 log = logging.getLogger(__name__)
+
+INTRO = r"""
+__/\\\\____________/\\\\_______/\\\___________________/\\\\\\\\\____________
+__\/\\\\\\________/\\\\\\______\/\\\_________________/\\\\\\\\\\\\\_________
+___\/\\\//\\\____/\\\//\\\______\/\\\________________/\\\/////////\\\_______
+____\/\\\\///\\\/\\\/_\/\\\______\/\\\_______________\/\\\_______\/\\\______
+_____\/\\\__\///\\\/___\/\\\______\/\\\_______________\/\\\\\\\\\\\\\\\_____
+______\/\\\____\///_____\/\\\______\/\\\_______________\/\\\/////////\\\____
+_______\/\\\_____________\/\\\______\/\\\_______________\/\\\_______\/\\\___
+________\/\\\_____________\/\\\______\/\\\\\\\\\\\\\\____\/\\\_______\/\\\__
+_________\///______________\///_______\//////////////_____\///________\///__
+
+Welcome to the Milton Library Assistant!
+"""
 
 
 class Milton(commands.Bot):
@@ -48,16 +62,10 @@ class Milton(commands.Bot):
         self.config: Box = config  # Bundle the config inside the bot itself.
         self.started_on: float = time.time()
         self.owner_id: int = self.config.bot.owner_id
-
-        self.DbClient: aiomotor.AsyncIOMotorClient = aiomotor.AsyncIOMotorClient()
-        self.DB: aiomotor.AsyncIOMotorDatabase = self.DbClient[
-            self.config.database.identifier
-        ]
-
         self.http_session: aiohttp.ClientSession = aiohttp.ClientSession()
 
         # move from here to the CHANGELOG file
-        path = Path(__file__).parent.parent
+        path = ROOT.parent
         path /= "CHANGELOG.md"
         self.changelog: Changelog = make_changelog(path)
         self.version: Version = self.changelog.latest_version
@@ -79,7 +87,7 @@ class Milton(commands.Bot):
         if self.config.bot.token is None:
             raise ValueError("Bot cannot start without a token")
         log.info("Milton is starting.")
-        make_intro()
+        print(INTRO)
 
         super().run(self.config.bot.token, *args, **kwargs)
 

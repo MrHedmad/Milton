@@ -8,6 +8,8 @@ from difflib import get_close_matches
 from pathlib import Path
 from typing import List
 from typing import Mapping
+from typing import Optional
+from typing import Tuple
 from typing import Union
 
 import async_timeout
@@ -128,3 +130,34 @@ def timediff(now: time, then: time) -> timedelta:
     then = datetime.combine(today, then)
 
     return now - then
+
+
+def id_from_mention(mention: str) -> Tuple[int, Optional[str]]:
+    """Get an ID from a mention
+
+    Any mention is supported (channel, user...).
+
+    Args:
+        mention: A mention to be stripped.
+
+    Returns:
+        A tuple containing the parsed ID and the type of mention.
+        The type is a string with `member`, 'role' or 'channel'.
+        If no type is determined, returns `None` as a type.
+
+    Raises:
+        `ValueError` if parsing fails.
+    """
+    if "&" in mention:
+        type_ = "role"
+    elif "@" in mention:
+        type_ = "member"
+    elif "#" in mention:
+        type_ = "channel"
+    else:
+        type_ = None
+
+    try:
+        return int(mention.rstrip(">").lstrip("<@!#&")), type_
+    except ValueError:
+        raise ValueError("Cannot parse mention")

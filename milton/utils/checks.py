@@ -3,7 +3,7 @@ from typing import Callable
 
 from discord.ext.commands import check
 
-from milton.config import CONFIG
+from milton.core.config import CONFIG
 
 
 def in_guild(id) -> Callable:
