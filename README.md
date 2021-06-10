@@ -4,6 +4,8 @@
 [![Code Style](https://img.shields.io/badge/style-Black-black?style=flat-square)](https://github.com/psf/black)
 [![Issues](https://img.shields.io/github/issues/mrhedmad/milton?style=flat-square)](https://github.com/MrHedmad/Milton/issues)
 
+**THIS REPO IS NOW ARCHIVED AND READ-ONLY** - There are some security vulnerabilities with packages used by this repo at the time of archiving. Be sure to update them. This will be probabily remade (and renamed) once `discord.py` version 2 comes out. 
+
 Home of Milton Library Assistant - the Discord Bot.
 
 This is the (hopefully) final iteration of the discord bot for my personal guild. If you find it useful in any way, feel free to run new instances of it. Please also take a look at the source code and suggest fixes for it, as I am not a professional programmer.
