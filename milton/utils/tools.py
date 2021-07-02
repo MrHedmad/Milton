@@ -98,7 +98,6 @@ def glob_word(query: str, words: List[str], *args, **kwargs):
     if isinstance(globbed, list):
         globbed = globbed[0]
 
-    assert isinstance(globbed, str)
     return globbed
 
 

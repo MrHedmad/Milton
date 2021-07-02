@@ -7,6 +7,7 @@ from typing import Tuple
 from typing import Type
 
 import motor.motor_asyncio as aiomotor
+import ujson
 
 from milton.core.config import CONFIG
 
@@ -152,6 +153,9 @@ class Struct:
             raise KeyError(f"This struct is frozen. Keyerror: '{key}'")
         self.update({key: value})
 
+    def __repr__(self) -> str:
+        return ujson.dumps(self.resolved)
+
 
 def NotInitializedError(BaseException):
     pass
@@ -212,7 +216,7 @@ class Document:
         assert self.collection is not None, "Cannot istantiate without a collection"
         # The original implementation tried to update __dict__. It's a mess.
         # just keep it like this and use the subscription operator.
-        assert isinstance(id_, str), "ID must be of type str, or Mongo will fail later"
+        id_ = str(id_)
         self.__id = id_
         self.__signature = {"__id": {"$eq": self.__id}}
         self.data = None
@@ -270,7 +274,7 @@ class MiltonUser(Document):
 
 
 class MiltonChannel(Document):
-    """A standard document class for users (discord.Channel)"""
+    """A standard document class for Channels (discord.Channel)"""
 
     struct: Struct = Struct({})
     collection: aiomotor.AsyncIOMotorCollection = DB.channels
@@ -284,7 +288,7 @@ class MiltonGuild(Document):
 
 
 class MiltonRoles(Document):
-    """A standard document class for users (discord.Role)"""
+    """A standard document class for Roles (discord.Role)"""
 
     struct: Struct = Struct({})
     collection: aiomotor.AsyncIOMotorCollection = DB.roles

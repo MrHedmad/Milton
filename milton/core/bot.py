@@ -1,12 +1,12 @@
+import asyncio
 import logging
 import sys
 import time
-from pathlib import Path
+from contextlib import suppress
 from typing import Callable
 
 import aiohttp
 import discord
-import motor.motor_asyncio as aiomotor
 from box import Box
 from discord.abc import PrivateChannel
 from discord.ext import commands
@@ -40,7 +40,7 @@ class Milton(commands.Bot):
     """There is only me, and you, and an eternity of doubt.
 
     This is the Bot instance of Milton. It inherits from :class:`commands.Bot`
-    so anything passed there can be passed here.
+    so anything passed there can be passed here too.
 
     Args:
         config: The parsed configuration for the bot.
@@ -99,11 +99,12 @@ class Milton(commands.Bot):
         """
         # This may get called twice due to some internal thing in discord.py.
         # I cannot do much other than sit and watch it doing twice.
-        log.info("Closing AIOHTTP session...")
-        await self.http_session.close()
-
         log.info("Closing bot loop...")
         await super().close()
+
+        if self.http_session:
+            log.info("Closing AIOHTTP session...")
+            await self.http_session.close()
 
     async def on_error(self, event_method, *args, **kwargs):
         """Handle unexpected errors raised at the bot level.

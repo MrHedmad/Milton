@@ -48,8 +48,13 @@ class DebugCog(commands.Cog, name="Debug"):
             out.add_line(line)
         await out.paginate(ctx)
 
-    @commands.command()
-    async def inspect(self, ctx: Context, name: str):
+    @commands.group(aliases=("ins", "i"), invoke_without_command=True)
+    async def inspect(self, ctx):
+        """Group of the inspect commands."""
+        pass
+
+    @inspect.command()
+    async def user(self, ctx: Context, name: str):
         """Shows someone's statistics"""
 
         try:
@@ -64,7 +69,6 @@ class DebugCog(commands.Cog, name="Debug"):
         out = Paginator(force_embed=True, title=f"Data for user {member.name}")
         async with MiltonUser(id_) as user:
             formatted = pprint.pformat(user.data, indent=4)
-            print(formatted)
         formatted = formatted.split("\n")
         for line in formatted:
             out.add_line(line)

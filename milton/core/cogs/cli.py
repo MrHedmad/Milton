@@ -47,14 +47,14 @@ class CommandInterface(commands.Cog):
 
         self.add_option(self.help_option, trigger="help", desc="Print this list")
 
-        self.run.start()
+        self.bot.loop.create_task(self.run())
 
     def cog_unload(self):
         self.run.cancel()
 
     async def help_option(self) -> None:
         """Implement the default help message"""
-        print("Here are the aviable commands:")
+        print("Here are the available commands:")
         for command, desc in self._descriptions.items():
             print("\t" + command, "-", clean_docstring(desc))
 
@@ -78,8 +78,8 @@ class CommandInterface(commands.Cog):
         # This return is to reuse the function in other functions
         return action
 
-    @tasks.loop(seconds=1)
     async def run(self) -> None:
+        await self.bot.wait_until_ready()
         log.debug("Starting the CLI service")
         while True:
             command = await ainput(self._prompt)
@@ -92,6 +92,10 @@ class CommandInterface(commands.Cog):
 
             globbed = glob_word(command[0], self._actions) or command[0]
 
+            if globbed is None:
+                print(f"Command `{command}` not recognized. Try `help`")
+                continue
+
             if globbed != command[0]:
                 print(f'Globbed from "{command[0]}" to "{globbed}".')
 
@@ -102,10 +106,6 @@ class CommandInterface(commands.Cog):
             except TypeError as e:
                 print(e)
                 print(f"Wrong number of arguments given to {command[0]}")
-
-    @run.before_loop
-    async def before_cli(self):
-        await self.bot.wait_until_ready()
 
 
 def setup(bot):
@@ -169,6 +169,9 @@ def setup(bot):
     @interface.add_option
     async def reloadext(ext_path):
         """Reload an extension. For instance, 'milton.cogs.tests'"""
+        if ext_path.startswith("milton.core"):
+            print(f"Cannot reload a core cog ({ext_path}).")
+            return
         await unloadext(ext_path)
         await loadext(ext_path)
 
@@ -177,7 +180,9 @@ def setup(bot):
         """Reloads all the cogs in the bot - for testing"""
         print("Reloading all cogs...")
         # Iterating over the ext while they reload is not a good idea
-        current_ext = [x for x in interface.bot.extensions]
+        current_ext = [
+            x for x in interface.bot.extensions if not x.startswith("milton.core")
+        ]
         for ext in current_ext:
             print(f"Attempting to reload {ext}")
             try:
@@ -230,12 +235,5 @@ def setup(bot):
         except HTTPException:
             print("Leaving guild failed. Milton might be the owner of the guild.")
         print(f"Left guilds {target.name} with snowflake {target.id}")
-
-    @interface.add_option
-    async def migratebirthdays():
-        """Migrate the old birthdays to the new database structure"""
-        print("Migrating guild configurations")
-        for guild in interface.bot.guilds:
-            guild_id = guild.id
 
     bot.add_cog(interface)
