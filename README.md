@@ -4,8 +4,6 @@
 [![Code Style](https://img.shields.io/badge/style-Black-black?style=flat-square)](https://github.com/psf/black)
 [![Issues](https://img.shields.io/github/issues/mrhedmad/milton?style=flat-square)](https://github.com/MrHedmad/Milton/issues)
 
-**THIS REPO IS NOW ARCHIVED AND READ-ONLY** - There are some security vulnerabilities with packages used by this repo at the time of archiving. Be sure to update them. This will be probabily remade (and renamed) once `discord.py` version 2 comes out. 
-
 Home of Milton Library Assistant - the Discord Bot.
 
 This is the (hopefully) final iteration of the discord bot for my personal guild. If you find it useful in any way, feel free to run new instances of it. Please also take a look at the source code and suggest fixes for it, as I am not a professional programmer.
@@ -16,7 +14,7 @@ This bot is only tested on my machine, which runs Linux. Hence, I am not sure of
 
 ## Installation
 
-1. Install `python` (3.8+), `git`, `mongoDB` and `pipenv` (this is os-specific, so google how-to).
+1. Install `python` (3.9+), `git`, `mongoDB` and `pipenv` (this is os-specific, so google how-to).
 2. Clone the repo to your local machine: `git clone https://github.com/MrHedmad/Milton.git`
 3. Enter the folder where you cloned this into: `cd Milton`
 4. Install the python dependencies: `pipenv install`
