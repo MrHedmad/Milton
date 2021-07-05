@@ -17,6 +17,7 @@ cchardet = "*"
 aiodns = "*"
 async-timeout = "*"
 tabulate = "*"
+feedparser = "*"
 
 [dev-packages]
 

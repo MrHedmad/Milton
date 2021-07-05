@@ -325,3 +325,24 @@ async def milton_guilds():
 async def milton_roles():
     """A wrapper for get_all_from for the Roles class"""
     return get_all_from(MiltonRoles)
+
+
+# Related to the idle game
+class MiltonIdler(Document):
+    """A standard document class for users that play the idle game (discord.Members)"""
+
+    struct: Struct = Struct(
+        {
+            # Timestamp of last calculation
+            "last_check": {"$default$": None},
+            # Current statistics level
+            "atk_level": {"$default$": 0, "$minimum$": 0},
+            # Current completion stages
+            "completed_stages": {"$default$": 0, "$minimum$": 0},
+            "current_stage_progression": {"$default$": 0, "$minimum$": 0},
+            # Current resources
+            "shards": {"$default$": 0, "$minimum$": 0},
+            "items": {"$default$": {}},
+        }
+    )
+    collection: aiomotor.AsyncIOMotorCollection = DB.idlegameusers

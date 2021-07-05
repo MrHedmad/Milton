@@ -10,10 +10,15 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [0.5.0] - 2021-07-05
+### Added
+- Added the `xkcd` command.
+
+
 ## [0.4.1] - 2021-07-02
 ### Changed
 - !! Upgraded from Python 3.8 to Python 3.9 (again)
-## Fixed
+### Fixed
 - Fixed a crash when using unknown commands in the CLI.
 - Fixed errors showing up when closing the bot loop through the CLI.
 
