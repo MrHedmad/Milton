@@ -346,3 +346,13 @@ class MiltonIdler(Document):
         }
     )
     collection: aiomotor.AsyncIOMotorCollection = DB.idlegameusers
+
+
+class MiltonGeneric(Document):
+    """A standard document class for generic data"""
+
+    struct: Struct = Struct({"last_xkcd_title": {"$default$": ""}})
+    collection: aiomotor.AsyncIOMotorCollection = DB.generic
+
+
+MiltonGeneric = MiltonGeneric("0")

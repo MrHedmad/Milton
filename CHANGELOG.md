@@ -13,6 +13,7 @@ The `beta` tag is added when the bot has not been in production for long. Can be
 ## [0.5.0] - 2021-07-05
 ### Added
 - Added the `xkcd` command.
+- Added a periodic check for new issues of the above comic.
 
 
 ## [0.4.1] - 2021-07-02

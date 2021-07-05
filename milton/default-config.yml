@@ -13,13 +13,14 @@ bot:
   # >> Timeout for listening to pagination instructions (seconds)
   pagination_timeout: 300
   # >> Set the test server. Useful to test some restricted commands.
-  test_server_id: 574203165495525387
+  test_server_id: null
   # >> Set which extensions are added at startup. The `cli`, `error_handler`
   # and `debug` cogs are already loaded by default.
   startup_extensions: [
     "meta",
     "toys",
-    "birthday"
+    "birthday",
+    "rss"
   ]
 
 database:

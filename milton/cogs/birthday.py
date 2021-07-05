@@ -107,7 +107,7 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
         """Tasks the checking of the birthdays in a loop"""
         log.info("Checking today's birthdays...")
 
-        async for guild_id, document in milton_guilds:
+        async for guild_id, document in milton_guilds():
             async with document as guild:
                 shout_channel = guild["bday_shout_channel"]
             if shout_channel:
