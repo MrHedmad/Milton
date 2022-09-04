@@ -12,7 +12,7 @@ from discord.abc import PrivateChannel
 from discord.ext import commands
 from discord.ext.commands.bot import when_mentioned
 from discord.ext.commands.bot import when_mentioned_or
-from discord.errors import ExtensionError
+from discord.ext.commands.errors import ExtensionNotFound
 
 from milton import ROOT
 from milton.core.changelog_parser import Changelog
@@ -63,7 +63,7 @@ class Milton(commands.Bot):
         self.config: Box = config  # Bundle the config inside the bot itself.
         self.started_on: float = time.time()
         self.owner_id: int = self.config.bot.owner_id
-        self.http_session: aiohttp.ClientSession = aiohttp.ClientSession()
+        self.http_session = None
 
         # move from here to the CHANGELOG file
         path = ROOT.parent
@@ -76,8 +76,32 @@ class Milton(commands.Bot):
         print(logon_str)
         log.info(logon_str)
 
-    def add_cog(self, cog: commands.Cog):
-        super().add_cog(cog)
+        # Add AIOHTTP session
+        self.http_session = aiohttp.ClientSession()
+
+        # Add cogs and extensions to be loaded
+        log.debug("Loading default extensions")
+
+        essentials = ["cli", "error_handler", "debug"]
+
+
+        # Essential extensions
+        for cog in essentials:
+            try:
+                await self.load_extension(f"milton.core.cogs.{cog}")
+            except ExtensionNotFound as e:
+                log.exception(e)
+                continue
+
+        for cog in CONFIG.bot.startup_extensions:
+            try:
+                await self.load_extension(f"milton.cogs.{cog}")
+            except ExtensionNotFound as e:
+                log.exception(e)
+                continue
+
+    async def add_cog(self, cog: commands.Cog):
+        await super().add_cog(cog)
         log.info(f"Added cog {cog.qualified_name}")
 
     def run(self, *args, **kwargs):
@@ -98,14 +122,12 @@ class Milton(commands.Bot):
         Also handles closing down the various async processes attached to the
         bot that need to be explicitly closed.
         """
-        # This may get called twice due to some internal thing in discord.py.
-        # I cannot do much other than sit and watch it doing twice.
-        log.info("Closing bot loop...")
-        await super().close()
-
         if self.http_session:
             log.info("Closing AIOHTTP session...")
             await self.http_session.close()
+        
+        log.info("Closing bot loop...")
+        await super().close()
 
     async def on_error(self, event_method, *args, **kwargs):
         """Handle unexpected errors raised at the bot level.
@@ -151,26 +173,6 @@ def run_bot():
         case_insensitive=True,
         intents=intents,
     )
-
-    # Add cogs and extensions to be loaded
-    log.debug("Loading default extensions")
-
-    essentials = ["cli", "error_handler", "debug"]
-
-    # Essential extensions
-    for cog in essentials:
-        try:
-            milton.load_extension(f"milton.core.cogs.{cog}")
-        except ExtensionError as e:
-            log.exception(e)
-            continue
-
-    for cog in CONFIG.bot.startup_extensions:
-        try:
-            milton.load_extension(f"milton.cogs.{cog}")
-        except ExtensionError as e:
-            log.exception(e)
-            continue
 
     # Run the client
     milton.run()

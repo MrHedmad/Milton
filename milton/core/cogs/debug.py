@@ -75,5 +75,5 @@ class DebugCog(commands.Cog, name="Debug"):
         await out.paginate(ctx)
 
 
-def setup(bot: Milton):
-    bot.add_cog(DebugCog(bot))
+async def setup(bot: Milton):
+    await bot.add_cog(DebugCog(bot))

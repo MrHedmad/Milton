@@ -6,7 +6,6 @@ from typing import Optional
 import discord
 from discord import Message
 from discord.abc import Messageable
-from discord.embeds import EmptyEmbed
 from discord.ext import commands
 
 from milton.core.config import CONFIG
@@ -89,7 +88,7 @@ class Paginator(commands.Paginator):
         pages = self.pages
         max_pages = len(pages)
 
-        embed = discord.Embed(description=pages[0], title=self.title or EmptyEmbed)
+        embed = discord.Embed(description=pages[0], title=self.title or None)
         current_page = 0
 
         if max_pages <= 1 and self.force_embed is False:
@@ -105,7 +104,7 @@ class Paginator(commands.Paginator):
         message: Message = await ctx.send(embed=embed)
 
         for emoji in DEFAULT_EMOJIS:
-            await message.add_reaction(emoji=emoji)
+            await message.add_reaction(emoji)
 
         while True:
             try:

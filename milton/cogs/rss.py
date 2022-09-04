@@ -75,5 +75,5 @@ class RSSCog(commands.Cog):
         await self.bot.wait_until_ready()
 
 
-def setup(bot: Milton):
-    bot.add_cog(RSSCog(bot))
+async def setup(bot: Milton):
+    await bot.add_cog(RSSCog(bot))

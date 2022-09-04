@@ -345,5 +345,5 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
             await ctx.send("Sorry, you did not set a shout channel.")
 
 
-def setup(bot):
-    bot.add_cog(BirthdayCog(bot))
+async def setup(bot):
+    await bot.add_cog(BirthdayCog(bot))

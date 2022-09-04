@@ -3,6 +3,7 @@ import platform
 import sys
 import time
 from importlib.metadata import version
+import importlib.resources as pkg_resources
 
 import discord
 from discord.errors import Forbidden
@@ -11,6 +12,7 @@ from discord.ext.commands.context import Context
 
 from milton.core.bot import Milton
 from milton.core.errors import MiltonInputError
+from milton.utils.checks import in_home_guild
 from milton.utils.tools import get_random_line
 
 
@@ -61,7 +63,7 @@ class MetaCog(commands.Cog, name="Meta"):
         Proudly hosted by GitHub.
         """
         embed = discord.Embed()
-        embed.set_thumbnail(url=str(self.bot.user.avatar_url))
+        embed.set_thumbnail(url=str(self.bot.user.display_avatar.url))
         embed.set_author(name="Milton Library Assistant")
         embed.title = "Find me on GitHub!"
         embed.url = r"https://github.com/MrHedmad/Milton"
@@ -98,7 +100,7 @@ class MetaCog(commands.Cog, name="Meta"):
         Proudly hosted by GitHub.
         """
         embed = discord.Embed()
-        embed.set_thumbnail(url=str(self.bot.user.avatar_url))
+        embed.set_thumbnail(url=str(self.bot.user.display_avatar.url))
         embed.set_author(name="Milton Library Assistant")
         embed.title = "Read my full changelog on GitHub!"
         embed.url = r"https://github.com/MrHedmad/Milton/blob/master/CHANGELOG.md"
@@ -106,6 +108,7 @@ class MetaCog(commands.Cog, name="Meta"):
 
     @commands.command(name="inside", invoke_without_command=True)
     @commands.guild_only()
+    @in_home_guild()
     async def subscribe(self, ctx: Context):
         """Subscribe to announcements and other things."""
         if (role := ctx.guild.get_role(777612764222717992)) :
@@ -115,7 +118,8 @@ class MetaCog(commands.Cog, name="Meta"):
                 except Forbidden:
                     raise MiltonInputError("I do not have powers here... :(")
                 embed = discord.Embed(title="You are now inside!")
-                embed.set_image(url=get_random_line("./milton/resources/insiders.txt"))
+                with pkg_resources.path("milton.resources", "insiders.txt") as path:
+                    embed.set_image(url=get_random_line(path))
                 await ctx.send(embed=embed)
             else:
                 try:
@@ -123,11 +127,10 @@ class MetaCog(commands.Cog, name="Meta"):
                 except Forbidden:
                     raise MiltonInputError("I do not have powers here... :(")
                 embed = discord.Embed(title="You are no longer inside.")
-                embed.set_image(
-                    url=get_random_line("./milton/resources/noinsiders.txt")
-                )
+                with pkg_resources.path("milton.resources", "noinsiders.txt") as path:
+                    embed.set_image(url=get_random_line(path))
                 await ctx.send(embed=embed)
 
 
-def setup(bot: Milton):
-    bot.add_cog(MetaCog(bot))
+async def setup(bot: Milton):
+    await bot.add_cog(MetaCog(bot))

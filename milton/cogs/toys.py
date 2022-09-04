@@ -2,6 +2,7 @@ import datetime as dt
 import logging
 import random
 from pathlib import Path
+import importlib.resources as pkg_resources
 
 import discord
 from discord.ext import commands
@@ -70,11 +71,12 @@ class Toys(commands.Cog, name="Toys"):
 
         Fact is guaranteed(tm) to be 99.8% accurate.
         """
-        embed = discord.Embed(
-            description=get_random_line("./milton/resources/facts.txt")
-        )
+        with pkg_resources.path("milton.resources", "facts.txt") as path:
+            embed = discord.Embed(
+                description=get_random_line(path)
+            )
         await ctx.send(embed=embed)
 
 
-def setup(bot):
-    bot.add_cog(Toys(bot))
+async def setup(bot):
+    await bot.add_cog(Toys(bot))

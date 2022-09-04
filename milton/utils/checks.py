@@ -44,3 +44,16 @@ def in_test_guild() -> Callable:
         return ctx.guild.id == CONFIG.bot.test_server_id
 
     return check(predicate)
+
+
+def in_home_guild() -> Callable:
+    """A check that sees if the command was invoked in the "Hedmad" server.
+
+    Returns:
+        Callable: The check
+    """
+
+    def predicate(ctx):
+        return ctx.guild.id == 311200788858798080
+    
+    return check(predicate)

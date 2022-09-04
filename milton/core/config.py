@@ -14,10 +14,8 @@ import milton
 
 log = logging.getLogger(__name__)
 
-ROOT: Path = pkg_resources.path(milton)
-
 try:
-    with (ROOT / "default-config.yml").open("r") as stream:
+    with pkg_resources.open_text(milton, "default-config.yml") as stream:
         _DEFAULT_CONFIG = yaml.safe_load(stream)
 except FileNotFoundError as err:
     log.error("Cannot find the default config file (default-config.yml)")

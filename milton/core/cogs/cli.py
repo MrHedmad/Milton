@@ -108,7 +108,7 @@ class CommandInterface(commands.Cog):
                 print(f"Wrong number of arguments given to {command[0]}")
 
 
-def setup(bot):
+async def setup(bot):
     """Setup this extension."""
     interface = CommandInterface(bot)
 
@@ -139,7 +139,7 @@ def setup(bot):
         """Load an extension. For instance, 'milton.cogs.tests'"""
         print(f"Attempting to load extension {ext_path}")
         try:
-            interface.bot.load_extension(ext_path)
+            await interface.bot.load_extension(ext_path)
         except ExtensionNotFound:
             print(f'The extension "{ext_path}" could not be found')
         except ExtensionAlreadyLoaded:
@@ -158,7 +158,7 @@ def setup(bot):
         """Unload an extension. For instance, 'milton.cogs.tests'"""
         print(f"Attempting to unload extension {ext_path}")
         try:
-            interface.bot.unload_extension(ext_path)
+            await interface.bot.unload_extension(ext_path)
         except ExtensionNotLoaded:
             print(f'The extension "{ext_path}" was not loaded')
         except Exception as e:
@@ -186,7 +186,7 @@ def setup(bot):
         for ext in current_ext:
             print(f"Attempting to reload {ext}")
             try:
-                interface.bot.reload_extension(ext)
+                await interface.bot.reload_extension(ext)
             except Exception as e:
                 log.exception("Unexpected exception while reloading extension")
             else:
@@ -236,4 +236,4 @@ def setup(bot):
             print("Leaving guild failed. Milton might be the owner of the guild.")
         print(f"Left guilds {target.name} with snowflake {target.id}")
 
-    bot.add_cog(interface)
+    await bot.add_cog(interface)
