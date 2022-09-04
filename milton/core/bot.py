@@ -12,6 +12,7 @@ from discord.abc import PrivateChannel
 from discord.ext import commands
 from discord.ext.commands.bot import when_mentioned
 from discord.ext.commands.bot import when_mentioned_or
+from discord.errors import ExtensionError
 
 from milton import ROOT
 from milton.core.changelog_parser import Changelog
@@ -136,3 +137,40 @@ async def _get_prefix(bot: Milton, message: discord.Message) -> Callable:
     if isinstance(message.channel, PrivateChannel):
         return when_mentioned(bot, message)
     return when_mentioned_or(CONFIG.prefixes.guild)(bot, message)
+
+
+def run_bot():
+    log.debug("Making the Milton Bot instance")
+
+    intents = discord.Intents.all()
+
+    milton = Milton(
+        config=CONFIG,
+        command_prefix=_get_prefix,
+        activity=discord.Game(name="with " + CONFIG.prefixes.guild + "help"),
+        case_insensitive=True,
+        intents=intents,
+    )
+
+    # Add cogs and extensions to be loaded
+    log.debug("Loading default extensions")
+
+    essentials = ["cli", "error_handler", "debug"]
+
+    # Essential extensions
+    for cog in essentials:
+        try:
+            milton.load_extension(f"milton.core.cogs.{cog}")
+        except ExtensionError as e:
+            log.exception(e)
+            continue
+
+    for cog in CONFIG.bot.startup_extensions:
+        try:
+            milton.load_extension(f"milton.cogs.{cog}")
+        except ExtensionError as e:
+            log.exception(e)
+            continue
+
+    # Run the client
+    milton.run()

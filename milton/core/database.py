@@ -11,6 +11,11 @@ import ujson
 
 from milton.core.config import CONFIG
 
+# This is a terrible, terrible mess. I wrote it long ago and it is mostly
+# overengineered BS. I need to rewrite it but I just know I'll never do it.
+
+# So, I'll keep it.
+
 CLIENT: aiomotor.AsyncIOMotorClient = aiomotor.AsyncIOMotorClient()
 DB: aiomotor.AsyncIOMotorDatabase = CLIENT[CONFIG.database.identifier]
 

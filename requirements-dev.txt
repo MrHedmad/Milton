@@ -1,0 +1,4 @@
+pre-commit
+bump2version
+build
+twine

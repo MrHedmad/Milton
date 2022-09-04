@@ -4,24 +4,28 @@ This is heavily based on the discord python server bot.
 """
 import logging
 from pathlib import Path
+import importlib.resources as pkg_resources
 
 import yaml
 from box import Box
 
 from milton.utils.tools import recursive_update
+import milton
 
 log = logging.getLogger(__name__)
 
+ROOT: Path = pkg_resources.path(milton)
+
 try:
-    with Path("./milton/default-config.yml").open("r") as stream:
+    with (ROOT / "default-config.yml").open("r") as stream:
         _DEFAULT_CONFIG = yaml.safe_load(stream)
 except FileNotFoundError as err:
     log.error("Cannot find the default config file (default-config.yml)")
     raise
 
 try:
-    with Path("./config.yml").open("r") as stream:
-        log.info("Searching and loading config file")
+    with Path("~/.milton/config.yml").expanduser().open("r") as stream:
+        log.info("Searching and loading config file (config.yml).")
         CONFIG = yaml.safe_load(stream)
 except FileNotFoundError as err:
     log.info("No config file found. Using default parameters")
