@@ -14,6 +14,7 @@ The `beta` tag is added when the bot has not been in production for long. Can be
 ### Changed
 - Updated the `discord.py` backend to version 2. Migrated the necessary commands.
 
+
 ## [0.5.0] - 2021-07-05
 ### Added
 - Added the `xkcd` command.

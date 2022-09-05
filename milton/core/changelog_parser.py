@@ -505,7 +505,7 @@ def make_changelog(path: Union[str, Path]) -> Changelog:
         return changelog
 
     for i, page in enumerate(pages):
-        if i == 1:
+        if i == 0:
             changelog.add_page(page)
             continue
         changelog.add_page(page, is_latest=False)
