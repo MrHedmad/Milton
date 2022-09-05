@@ -10,22 +10,23 @@ This is the (hopefully) final iteration of the discord bot for my personal guild
 
 The bot uses [MongoDB](https://www.mongodb.com/) to store data.
 
-This bot is only tested on my machine, which runs Linux. Hence, I am not sure of its behaviour on Windows.
+This bot is only tested on my machine, which runs Linux. Hence, I am not sure of its behavior on Windows.
 
 ## Installation
 
-1. Install `python` (3.9+), `git`, `mongoDB` and `pipenv` (this is os-specific, so google how-to).
+1. Install `python` (3.10+), `git` and `mongoDB` (this is os-specific, so google how-to). I assume that `python` points to the Python 3.10 interpreter.
 2. Clone the repo to your local machine: `git clone https://github.com/MrHedmad/Milton.git`
 3. Enter the folder where you cloned this into: `cd Milton`
-4. Install the python dependencies: `pipenv install`
+4. Make a virtual environment and enter it `python -m venv env`, `source env/bin/activate`.
+5. Install the bot with `pip install -e .`.
 5. Configure the bot, such as adding your bot token (see below).
-6. Run the bot by entering a virtual environment (`pipenv shell`) and running `python -m milton` **OR** by running `pipenv run python -m milton`.
+6. Run the bot by executing `milton`.
 
 If you're contributing, also setup `pre-commit` to automatically run `black` and other checks for you when you commit using `pre-commit install`.
 
 ### Configuration
 
-Create a `config.yml` (and not `.yaml`!) at the same level of the `milton` folder and add your specific configuration for the bot, overriding any configs in the `default-config.yml` file. Note that the structure of the file must be identical to the first (I suggest copy-pasting it and changing what you need/like).
+Create a `config.yml` (and not `.yaml`!) in `~/.milton/` and add your specific configuration for the bot, overriding any configs in the `default-config.yml` file. Note that the structure of the file must be identical to the first (I suggest copy-pasting it and changing what you need/like: from the Milton folder, `mkdir ~/.milton/ && cp ./milton/default-config.yml ~/.milton/config.yml`).
 
 One config you must override is the `bot > token` field, providing your own [discord bot token](https://discord.com/developers/applications).
 

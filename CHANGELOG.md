@@ -10,6 +10,10 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [0.6.0] - 2022-09-05
+### Changed
+- Updated the `discord.py` backend to version 2. Migrated the necessary commands.
+
 ## [0.5.0] - 2021-07-05
 ### Added
 - Added the `xkcd` command.
