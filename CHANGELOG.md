@@ -10,6 +10,12 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [0.6.1] - 2022-09-05
+### Changed
+- Added the `pdf_render` cog to automatically render PDF files that users upload in channels. The operation occurs completely in-memory. I'm not 100% sure that the bot will not crash if you upload a 10Gb PDF file, but discord's file size limitations should prevent any abuse.
+- The above cog **is not** loaded by default.
+
+
 ## [0.6.0] - 2022-09-05
 ### Changed
 - Updated the `discord.py` backend to version 2. Migrated the necessary commands.

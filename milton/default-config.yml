@@ -31,7 +31,7 @@ database:
 # >> Set the path for the logs.
 # Additional logs are created alongside the main one during runtime.
 logs:
-  path: "./milton/logs/mla.log"
+  path: "~/.milton/logs/mla.log"
   # Levels can be 50 - CRITICAL, 40 - ERROR, 30 - WARNING, 20 - INFO,
   # 10 - DEBUG or some other int. Log messages of level equal or above the
   # specified will be logged.
