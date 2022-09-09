@@ -7,6 +7,8 @@ import importlib.resources as pkg_resources
 
 import discord
 from discord.errors import Forbidden
+from discord import app_commands
+from discord import Interaction
 from discord.ext import commands
 from discord.ext.commands.context import Context
 
@@ -22,9 +24,9 @@ class MetaCog(commands.Cog, name="Meta"):
     def __init__(self, bot) -> None:
         self.bot = bot
 
-    @commands.command()
-    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def status(self, ctx: Context):
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 10)
+    async def status(self, interaction: Interaction):
         """Returns the status of the bot.
 
         Information like uptime, python version and linux version.
@@ -54,10 +56,10 @@ class MetaCog(commands.Cog, name="Meta"):
             name="Watching", value=f"{tot_guilds} guilds - {tot_users} users"
         )
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @commands.command()
-    async def source(self, ctx: Context):
+    @app_commands.command()
+    async def source(self, interaction: Interaction):
         """Returns the link to the bot's source code.
 
         Proudly hosted by GitHub.
@@ -67,10 +69,10 @@ class MetaCog(commands.Cog, name="Meta"):
         embed.set_author(name="Milton Library Assistant")
         embed.title = "Find me on GitHub!"
         embed.url = r"https://github.com/MrHedmad/Milton"
-        await ctx.send(embed=embed)
+        await interaction.response.send(embed=embed)
 
-    @commands.command()
-    async def ping(self, ctx: Context):
+    @app_commands.command()
+    async def ping(self, interaction: Interaction):
         """Pong!
 
         Returns the discord websocket latency, kinda like the ping of the bot.
@@ -80,31 +82,19 @@ class MetaCog(commands.Cog, name="Meta"):
         embed = discord.Embed()
         embed.title = "**Pong!**"
         embed.add_field(name="Discord Websocket Latency", value=str(self.bot.latency))
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @commands.group(
+    @app_commands.command(
         name="changes",
         aliases=("changelog", "log", "notes"),
         invoke_without_command=True,
     )
-    async def changes_group(self, ctx):
+    async def changes(self, interaction: Interaction):
         """Display the full changelog for the bot"""
         out = self.bot.changelog.to_paginator()
-        await out.paginate(ctx)
-
-    @changes_group.command()
-    async def link(self, ctx: Context):
-        """Returns the link to the bot's full changelog.
-
-        For those who prefer a less interactive changelog.
-        Proudly hosted by GitHub.
-        """
-        embed = discord.Embed()
-        embed.set_thumbnail(url=str(self.bot.user.display_avatar.url))
-        embed.set_author(name="Milton Library Assistant")
-        embed.title = "Read my full changelog on GitHub!"
-        embed.url = r"https://github.com/MrHedmad/Milton/blob/master/CHANGELOG.md"
-        await ctx.send(embed=embed)
+        out.url = r"https://github.com/MrHedmad/Milton/blob/master/CHANGELOG.md"
+        out.title = "Milton Library Assistant Changelog"
+        await out.paginate(interaction)
 
     @commands.command(name="inside", invoke_without_command=True)
     @commands.guild_only()
