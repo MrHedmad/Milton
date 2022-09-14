@@ -192,6 +192,15 @@ async def setup(bot):
             else:
                 print(f"Successfully reloaded extension {ext}")
         print("Finished reloading extensions")
+    
+    @interface.add_option
+    async def sync():
+        """Sync all app commands with Discord"""
+        print("Syncing all app commands...")
+        try:
+            await interface.bot.tree.sync()
+        except Exception as e:
+            print("Sync failed: {}", e)
 
     @interface.add_option
     async def listguilds():

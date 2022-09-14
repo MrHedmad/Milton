@@ -4,8 +4,8 @@ from contextlib import suppress
 from typing import Optional
 
 import discord
+from discord import Interaction
 from discord import Message
-from discord.abc import Messageable
 from discord.ext import commands
 
 from milton.core.config import CONFIG
@@ -52,20 +52,26 @@ class Paginator(commands.Paginator):
         max_size: int = 2000,
         force_embed: bool = False,
         title: Optional[str] = None,
+        url: Optional[str] = None,
+        colour: Optional[str] = None
     ) -> None:
         # As this is used a lot, I expose the parent class arguments explicitly
         super().__init__(prefix, suffix, max_size)
         self.force_embed = force_embed
         self.title = title
+        self.url = url
+        self.colour = colour
 
-    async def paginate(self, ctx: Messageable):
+        self.interaction = None
+
+    async def paginate(self, interaction: Interaction):
         """Send and start to paginate this message
 
         If message is just one page, does not provide interactive pagination,
         as it's useless.
 
         Args:
-            ctx: The messageable channel to send the message to.
+            interaction: The interaction to reply to.
         """
         # Yanked and modified from the python discord bot paginator
         def event_check(reaction_: discord.Reaction, user_: discord.Member) -> bool:
@@ -80,37 +86,40 @@ class Paginator(commands.Paginator):
                         # Reaction is one of the pagination emotes
                         str(reaction_.emoji) in DEFAULT_EMOJIS,
                         # Reaction was not made by the Bot
-                        user_.id != ctx.bot.user.id,
+                        user_.id != interaction.client.user.id,
                     )
                 )
             )
 
+        self.interaction = interaction
+
         pages = self.pages
         max_pages = len(pages)
 
-        embed = discord.Embed(description=pages[0], title=self.title or None)
+        embed = discord.Embed(description=pages[0], title=self.title, url=self.url, colour=self.colour)
         current_page = 0
 
         if max_pages <= 1 and self.force_embed is False:
             # Only a single page to send. Just send it and stop
-            return await ctx.send(embed.description)
+            return await interaction.response.send_message(embed.description)
         elif self.force_embed:
             # Forced to send an embed anyway.
-            return await ctx.send(embed=embed)
+            return await interaction.response.send_message(embed=embed)
 
         # Add a handy descriptive footer
         embed.set_footer(text=f"Page {current_page + 1} / {max_pages}")
-
-        message: Message = await ctx.send(embed=embed)
+    
+        await interaction.response.send_message(embed=embed)
+        message: Message = await interaction.original_response()
 
         for emoji in DEFAULT_EMOJIS:
             await message.add_reaction(emoji)
 
         while True:
             try:
-                reaction, user = await ctx.bot.wait_for(
+                reaction, user = await interaction.client.wait_for(
                     "reaction_add",
-                    timeout=ctx.bot.config.bot.pagination_timeout,
+                    timeout=interaction.client.config.bot.pagination_timeout,
                     check=event_check,
                 )
             except asyncio.TimeoutError:
@@ -186,3 +195,4 @@ class Paginator(commands.Paginator):
         log.debug("Ending pagination and clearing reactions.")
         with suppress(discord.NotFound):
             await message.clear_reactions()
+

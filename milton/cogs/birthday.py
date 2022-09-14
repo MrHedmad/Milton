@@ -5,8 +5,9 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-import motor.motor_asyncio as aiomotor
 from discord.ext import commands
+from discord import app_commands
+from discord import Interaction
 
 from milton.core.bot import Milton
 from milton.core.config import CONFIG
@@ -15,6 +16,7 @@ from milton.core.database import MiltonGuild
 from milton.core.errors import MiltonInputError
 from milton.utils import tasks
 from milton.utils.paginator import Paginator
+from milton.utils.enums import Months
 
 log = logging.getLogger(__name__)
 
@@ -92,7 +94,7 @@ def clean_date(date: Optional[str]):
         return "-".join(output)
 
 
-class BirthdayCog(commands.Cog, name="Birthdays"):
+class BirthdayCog(commands.GroupCog, name="birthday"):
     """Cog for implementing the birthday commands and notifications"""
 
     def __init__(self, bot: Milton) -> None:
@@ -127,7 +129,7 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
 
         assert shout_channel_id is not None
 
-        out = Paginator()
+        out = []
         today = dt.date.today()
 
         async with MiltonGuild(str(guild_id)) as guild:
@@ -146,7 +148,7 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
 
             if birthday.year == 1:
                 # This is (probably) a date without a year.
-                out.add_line(f"Happy birthday to you, <@!{user_id}>!!")
+                out.append(f"Happy birthday to you, <@!{user_id}>!!")
             else:
                 # This is a date with a year
                 age = today.year - birthday.year
@@ -158,12 +160,12 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
                 else:
                     ending = f"You just turned {age}!!"
 
-                out.add_line(f"Happy birthday to you, <@!{user_id}>!! " + ending)
+                out.append(f"Happy birthday to you, <@!{user_id}>!! " + ending)
 
-        if len(out.pages) != 0:
+        if len(out) != 0:
             shout_channel = self.bot.get_channel(int(shout_channel_id))
             if shout_channel:
-                await out.paginate(shout_channel)
+                await shout_channel.send(content="\n".join(out))
             else:
                 log.error(
                     (
@@ -176,32 +178,27 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
                 async with MiltonGuild(guild_id) as guild:
                     guild["bday_shout_channel"] = None
 
-    @commands.guild_only()
-    @commands.group(
-        name="bday",
-        aliases=("bdays", "birthday", "birthdays"),
-        invoke_without_command=True,
-    )
-    async def birthday_group(self, ctx):
-        """Group of the birthday commands.
-
-        With no additional commands, sends the list of upcoming birthdays of
-        people who have registered a birthday in this specific server.
-        """
+    @app_commands.command(name="show")
+    async def get_birthdays(self, interaction: Interaction):
+        """Get birthdays registered in this guild."""
         do_paginate = False  # This is horrible but I want to get it over with
         out = Paginator(
             prefix="```",
             suffix="```",
             force_embed=True,
-            title=f"Here are the birthdays for **{ctx.guild.name}**",
+            title=f"Here are the birthdays for **{interaction.guild.name}**",
         )
 
-        guild_id = str(ctx.guild.id)
-        guild = self.bot.get_guild(int(guild_id))
+        if not interaction.guild:
+            interaction.response.send_message("You must run this in a server.")
+            return
+
+        guild_id = str(interaction.guild.id)
+        guild = interaction.guild
 
         async with MiltonGuild(guild_id) as milton_guild:
             if not milton_guild["birthdays"]:
-                await ctx.send("Nobody registered a birthday in this server, sorry.")
+                await interaction.response.send("Nobody registered a birthday in this server, sorry.")
                 return
             docs = [(x, y) for x, y in milton_guild["birthdays"].items()]
         docs = sorted(docs, key=lambda x: time_to_bday(x[1]))
@@ -228,24 +225,25 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
                 )
 
         if do_paginate:
-            await out.paginate(ctx)
+            await out.paginate(interaction)
         else:
-            await ctx.send("Nobody registered a birthday in this server, sorry.")
+            await interaction.response.send("Nobody registered a birthday in this server, sorry.")
 
-    @birthday_group.command(aliases=("add", "set"))
-    async def register(self, ctx, date: str):
-        """Registers a new birthday for yourself.
+    @app_commands.command(name = "set")
+    async def register(self, interaction: Interaction, month: Months, day: app_commands.Range[int, 1, 31], year: app_commands.Range[int, 1000, 9999]):
+        """Registers a new birthday for yourself."""
+        if not interaction.guild:
+            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
 
-        The date is a string like DD-MM-YYYY OR DD-MM.
-        Birthdays are NOT encrypted in any way.
-        If the day or month are single-digits, it must be padded with a
-        leading 0. TODO: Needs to be checked
+        date = "{}-{}-{}".format(
+            str(day).zfill(2),
+            str(month.value).zfill(2),
+            year
+        )
 
-        Example usage:
+        ## This is a reuse of the old code. Mostly done to not change the
+        ## database backend, and to keep the checks used before.
 
-            $bday register 25-04-1993
-            $bday register 01-01
-        """
         try:
             birth_from_str(date)
         except ValueError:
@@ -260,39 +258,46 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
         # I'm saving it as STR just because so I don't have to add a new type
         # in the parser for the dictionary
 
-        guild_id = str(ctx.message.guild.id)
-        user_id = str(ctx.message.author.id)
+        guild_id = str(interaction.guild.id)
+        user_id = str(interaction.user.id)
 
         log.debug(f"Updating birthday of user {user_id} in guild {guild_id}")
 
         async with MiltonGuild(guild_id) as guild:
             guild["birthdays"].update({user_id: date})
 
-        await ctx.send("Huzzah! I will now remember your birthday.")
+        await interaction.response.send_message("Huzzah! I will now remember your birthday.")
 
-    @birthday_group.command()
-    async def remove(self, ctx):
+
+    @app_commands.command()
+    async def remove(self, interaction):
         """Removes the birthday date from yourself."""
-        guild_id = str(ctx.message.guild.id)
-        user_id = str(ctx.message.author.id)
+        if not interaction.guild:
+            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+
+        guild_id = str(interaction.guild.id)
+        user_id = str(interaction.user.id)
 
         log.debug(f"Removing birthday of user {user_id} in guild {guild_id}")
 
         async with MiltonGuild(guild_id) as guild:
             guild["birthdays"].update({user_id: None})
 
-        await ctx.send("Sure! I forgot your birthday for this server. Bye!")
+        await interaction.response.send_message("Sure! I forgot your birthday for this server. Bye!")
 
-    @commands.has_permissions(administrator=True)
-    @birthday_group.command()
-    async def here(self, ctx):
+    @app_commands.command()
+    @app_commands.checks.has_permissions(administrator=True)
+    async def here(self, interaction: Interaction):
         """Set the channel where to scream the birthdays.
 
         Requires the Administrator permissions to use.
         Overwrites any previously set channel.
         """
-        guild_id = str(ctx.message.guild.id)
-        channel_id = str(ctx.channel.id)
+        if not interaction.guild:
+            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+
+        guild_id = str(interaction.guild.id)
+        channel_id = str(interaction.channel.id)
 
         log.debug(
             f"Setting birthday shout channel for guild {guild_id} to {channel_id}"
@@ -301,7 +306,7 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
         async with MiltonGuild(guild_id) as guild:
             guild["bday_shout_channel"] = channel_id
 
-        await ctx.send(
+        await interaction.response.send_message(
             (
                 "I will shoutout the birthdays in this channel from now on!"
                 " You can use `birthday silence` to make me shut up."
@@ -309,40 +314,46 @@ class BirthdayCog(commands.Cog, name="Birthdays"):
             )
         )
 
-    @commands.has_permissions(administrator=True)
-    @birthday_group.command()
-    async def silence(self, ctx):
+    @app_commands.command()
+    @app_commands.checks.has_permissions(administrator=True)
+    async def silence(self, interaction: Interaction):
         """Make the bot stop shouting in chat.
 
         Essentially removes the channel set through 'bday here'.
         Works in any channel, not necessarily that being screamed at.
         """
-        guild_id = str(ctx.message.guild.id)
+        if not interaction.guild:
+            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+
+        guild_id = str(interaction.guild.id)
 
         log.debug(f"Removing birthday shout channel for guild {guild_id}")
 
         async with MiltonGuild(guild_id) as guild:
             guild["bday_shout_channel"] = None
 
-        await ctx.send(("I will be silent about birthdays from now on."))
+        await interaction.response.send_message(("I will be silent about birthdays from now on."))
 
-    @commands.has_permissions(administrator=True)
-    @birthday_group.command()
-    async def check(self, ctx):
+    @app_commands.command()
+    @app_commands.checks.has_permissions(administrator=True)
+    async def check(self, interaction: Interaction):
         """Force the bot to check now for today's birthdays.
 
         Does not affect the normal check loop.
         """
-        await ctx.send("Checking for birthdays...")
-        guild_id = str(ctx.guild.id)
+        if not interaction.guild:
+            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+
+        guild_id = str(interaction.guild.id)
 
         async with MiltonGuild(guild_id) as guild:
             shout_channel = guild["bday_shout_channel"]
 
         if shout_channel is not None:
+            await interaction.response.send_message("Checking birthdays, please wait.", ephemeral=True)
             await self.check_birthdays(guild_id)
         else:
-            await ctx.send("Sorry, you did not set a shout channel.")
+            await interaction.response.send_message("Sorry, you did not set a shout channel.")
 
 
 async def setup(bot):

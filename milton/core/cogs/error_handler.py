@@ -1,108 +1,175 @@
 """This extension handles errors rising from other commands and cogs
 
 Mostly based on (aka completely yanked from) this example:
-https://gist.github.com/EvieePy/7822af90858ef65012ea500bcecf1612
+https://github.com/PaulMarisOUMary/Discord-Bot/blob/main/cogs/errors.py
 """
-import logging
-import traceback
-
 import discord
-from discord.ext import commands
 
-from milton.core import errors as merrors
+from discord.ext import commands
+from discord import app_commands
+
+from milton.core.bot import Milton
+from milton.core.errors import MiltonInputError
+
+import logging
 
 log = logging.getLogger(__name__)
 
-
-class CommandErrorHandler(commands.Cog):
-    """A cog that handles command errors"""
-
-    def __init__(self, bot):
+class Errors(commands.Cog, name="errors"):
+    """Errors handler."""
+    def __init__(self, bot: Milton) -> None:
         self.bot = bot
+        bot.tree.error(coro = self.__dispatch_to_app_command_handler)
 
-    @commands.Cog.listener()
-    async def on_command_error(
-        self, ctx: commands.Context, error: commands.CommandError
-    ):
-        """The event triggered when an error is raised while invoking a command.
+        self.default_error_message = "🕳️ There is an error."
 
-        Args:
-            ctx: The context used for command invocation.
-            error: The Exception raised.
+    """def help_custom(self):
+        emoji = "<a:crossmark:842800737221607474>"
+        label = "Error"
+        description = "A custom errors handler. Nothing to see here."
+        return emoji, label, description"""
+
+    async def __dispatch_to_app_command_handler(self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
+        self.bot.dispatch("app_command_error", interaction, error)
+
+    async def __respond_to_interaction(self, interaction: discord.Interaction) -> bool:
+        try:
+            await interaction.response.send_message(content=self.default_error_message, ephemeral=True)
+            return True
+        except discord.errors.InteractionResponded:
+            return False
+
+    @commands.Cog.listener("on_error")
+    async def get_error(self, event, *args, **kwargs):
+        """Error handler"""
+        print(f"! Unexpected Internal Error: (event) {event}, (args) {args}, (kwargs) {kwargs}.")
+
+    @commands.Cog.listener("on_command_error")
+    async def get_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Command Error handler
+        doc: https://discordpy.readthedocs.io/en/master/ext/commands/api.html#exception-hierarchy
         """
-        log.debug("The Error Handler was invoked to handle an error")
+        try:
+            if ctx.interaction: # HybridCommand Support
+                await self.__respond_to_interaction(ctx.interaction)
+                edit = ctx.interaction.edit_original_message
+                if isinstance(error, commands.HybridCommandError):
+                    error = error.original # Access to the original error
+            else:
+                discord_message = await ctx.send(self.default_error_message)
+                edit = discord_message.edit
 
-        trace = "".join(
-            traceback.format_exception(type(error), error, error.__traceback__)
-        )
-        trace = trace.strip()
+            raise error
 
-        if hasattr(ctx.command, "on_error"):
-            log.debug("Invoked, but will not override command's own error handler")
-            return
-
-        cog = ctx.cog
-        if cog:
-            if cog._get_overridden_method(cog.cog_command_error) is not None:
-                log.debug("Invoked, but will not override cog's own error handler")
-                return
-
-        # Allows us to check for original exceptions raised and sent to CommandInvokeError.
-        # If nothing is found. We keep the exception passed to on_command_error.
-        error = getattr(error, "original", error)
-        ignored = (commands.CommandNotFound,)
-
-        if isinstance(error, ignored):
-            log.debug(f"Ignored exception {type(error)} - {error}")
-            return
-
-        # Check for specific exceptions to be handled
-        if isinstance(error, commands.DisabledCommand):
-            await ctx.send(f"{ctx.command} has been disabled.")
-
-        elif isinstance(error, commands.CommandOnCooldown):
-            try:
-                await ctx.send(str(error))
-            except discord.HTTPException:
-                pass
-
-        elif isinstance(error, commands.NoPrivateMessage):
-            try:
-                await ctx.author.send(
-                    f"{ctx.command} can not be used in Private Messages."
-                )
-            except discord.HTTPException:
-                pass
-
-        elif isinstance(error, commands.errors.CheckFailure):
-            log.debug(f"A command was called, but a check failed. Trace: \n{trace}")
-
-        elif isinstance(error, commands.MissingRequiredArgument):
-            log.debug(f"A command was missing a required argument. Trace: \n{trace}")
-            try:
-                await ctx.send("```\nUsage:\n" + ctx.command.help + "```")
-            except discord.HTTPException:
-                pass
-
-        elif isinstance(error, merrors.MiltonInputError):
-            # Send feedback to user
-            try:
-                await ctx.send(error.msg)
-            except discord.HTTPException:
-                pass
-
-        else:
-            # All other Errors not returned come here.
-            # Skip the prompt line
-            if "CommandInterface" in self.bot.cogs:
-                print("")
-
-            log.error(f"Ignoring exception in command {ctx.command}:\n" f"{trace}")
-
-            # Re-print the handle for the CLI cog
-            if "CommandInterface" in self.bot.cogs:
-                print(">> ", end="")
+        # ConversionError
+        except commands.ConversionError as d_error:
+            await edit(content=f"🕳️ {d_error}")
+        # UserInputError
+        except commands.MissingRequiredArgument as d_error:
+            await edit(content=f"🕳️ Something is missing. `{ctx.clean_prefix}{ctx.command.name} <{'> <'.join(ctx.command.clean_params)}>`")
+        # UserInputError -> BadArgument
+        except commands.MemberNotFound or commands.UserNotFound as d_error:
+            await edit(content=f"🕳️ Member `{str(d_error).split(' ')[1]}` not found ! Don't hesitate to ping the requested member.")
+        # UserInputError -> BadUnionArgument | BadLiteralArgument | ArgumentParsingError
+        except commands.BadArgument or commands.BadUnionArgument or commands.BadLiteralArgument or commands.ArgumentParsingError as d_error:
+            await edit(content=f"🕳️ {d_error}")
+        # CommandNotFound
+        except commands.CommandNotFound as d_error:
+            await edit(content=f"🕳️ Command `{str(d_error).split(' ')[1]}` not found !")
+        # CheckFailure
+        except commands.PrivateMessageOnly:
+            await edit(content="🕳️ This command canno't be used in a guild, try in direct message.")
+        except commands.NoPrivateMessage:
+            await edit(content="🕳️ This is not working as excpected.")
+        except commands.NotOwner:
+            await edit(content="🕳️ You must own this bot to run this command.")
+        except commands.MissingPermissions as d_error:
+            await edit(content=f"🕳️ Your account require the following permissions: `{'` `'.join(d_error.missing_permissions)}`.")
+        except commands.BotMissingPermissions as d_error:
+            if not "send_messages" in d_error.missing_permissions:
+                await edit(content=f"🕳️ The bot require the following permissions: `{'` `'.join(d_error.missing_permissions)}`.")
+        except commands.CheckAnyFailure or commands.MissingRole or commands.BotMissingRole or commands.MissingAnyRole or commands.BotMissingAnyRole as d_error:
+            await edit(content=f"🕳️ {d_error}")
+        except commands.NSFWChannelRequired:
+            await edit(content="🕳️ This command require an NSFW channel.")
+        # DisabledCommand
+        except commands.DisabledCommand:
+            await edit(content="🕳️ Sorry this command is disabled.")
+        # CommandInvokeError
+        except commands.CommandInvokeError as d_error:
+            await edit(content=f"🕳️ {d_error.original}")
+        # CommandOnCooldown
+        except commands.CommandOnCooldown as d_error:
+            await edit(content=f"🕳️ Command is on cooldown, wait `{str(d_error).split(' ')[7]}` !")
+        # MaxConcurrencyReached
+        except commands.MaxConcurrencyReached as d_error:
+            await edit(content=f"🕳️ Max concurrency reached. Maximum number of concurrent invokers allowed: `{d_error.number}`, per `{d_error.per}`.")
+        # HybridCommandError
+        except commands.HybridCommandError as d_error:
+            await self.get_app_command_error(ctx.interaction, error)
+        # Milton Input Errors.
+        except MiltonInputError as e:
+            await edit(content=f"Cannot parse your input, sorry: {e.msg}")
+        except Exception as e:
+            self.trace_error("get_command_error", e)
 
 
-async def setup(bot):
-    await bot.add_cog(CommandErrorHandler(bot))
+    @commands.Cog.listener("on_app_command_error")
+    async def get_app_command_error(self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
+        """App command Error Handler
+        doc: https://discordpy.readthedocs.io/en/master/interactions/api.html#exception-hierarchy
+        """
+        try:
+            await self.__respond_to_interaction(interaction)
+            edit = interaction.edit_original_response
+
+            raise error
+        except app_commands.CommandInvokeError as d_error:
+            if isinstance(d_error.original, discord.errors.InteractionResponded):
+                await edit(content=f"🕳️ {d_error.original}")
+            elif isinstance(d_error.original, discord.errors.Forbidden):
+                await edit(content=f"🕳️ `{type(d_error.original).__name__}` : {d_error.original.text}")
+            else:
+                await edit(content=f"🕳️ `{type(d_error.original).__name__}` : {d_error.original}")
+        except app_commands.CheckFailure as d_error:
+            if isinstance(d_error, app_commands.errors.CommandOnCooldown):
+                await edit(content=f"🕳️ Command is on cooldown, wait `{str(d_error).split(' ')[7]}` !")
+            else:
+                await edit(content=f"🕳️ `{type(d_error).__name__}` : {d_error}")
+        except app_commands.CommandNotFound:
+            await edit(content=f"🕳️ Command was not found.. Seems to be a discord bug, probably due to desynchronization.\nMaybe there is multiple commands with the same name, you should try the other one.")
+        except MiltonInputError as e:
+            await edit(content=f"Cannot parse your input, sorry: {e.msg}")
+        except Exception as e: 
+            """
+            Caught here:
+            app_commands.TransformerError
+            app_commands.CommandLimitReached
+            app_commands.CommandAlreadyRegistered
+            app_commands.CommandSignatureMismatch
+            """
+
+            log.exception(e)
+
+    @commands.Cog.listener("on_view_error")
+    async def get_view_error(self, interaction: discord.Interaction, error: Exception, item: any):
+        """View Error Handler"""
+        try:
+            raise error
+        except discord.errors.Forbidden:
+            pass
+        except Exception as e:
+            log.exception(e)
+
+    @commands.Cog.listener("on_modal_error")
+    async def get_modal_error(self, interaction: discord.Interaction, error: Exception):
+        """Modal Error Handler"""
+        try:
+            raise error
+        except discord.errors.Forbidden:
+            pass
+        except Exception as e:
+            log.exception(e)
+
+async def setup(bot: Milton):
+    await bot.add_cog(Errors(bot))

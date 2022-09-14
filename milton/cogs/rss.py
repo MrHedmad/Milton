@@ -6,6 +6,8 @@ import re
 import discord
 import feedparser
 from discord.ext import commands
+from discord import app_commands
+from discord import Interaction
 from discord.ext.commands.context import Context
 
 from milton.core.bot import Milton
@@ -41,10 +43,11 @@ class RSSCog(commands.Cog):
 
         self.check_xkcd_task.start()
 
-    @commands.command()
-    async def xkcd(self, ctx: Context):
+    @app_commands.command()
+    async def xkcd(self, interaction: Interaction):
+        """Send the latest XKCD issue"""
         embed = await get_last_xkcd(self.bot.http_session)
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
     @tasks.loop(hours=8)
     async def check_xkcd_task(self):
@@ -62,7 +65,7 @@ class RSSCog(commands.Cog):
         channel = self.bot.get_channel(861597995879628850)
 
         if not channel:
-            log.warning("Couldnt find a channel to send the xkcd message to")
+            log.warning("Couldn't find a channel to send the xkcd message to")
             return
 
         await channel.send(embed=embed)

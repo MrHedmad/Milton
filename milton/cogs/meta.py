@@ -7,12 +7,13 @@ import importlib.resources as pkg_resources
 
 import discord
 from discord.errors import Forbidden
+from discord import app_commands
+from discord import Interaction
 from discord.ext import commands
 from discord.ext.commands.context import Context
 
 from milton.core.bot import Milton
 from milton.core.errors import MiltonInputError
-from milton.utils.checks import in_home_guild
 from milton.utils.tools import get_random_line
 
 
@@ -22,9 +23,9 @@ class MetaCog(commands.Cog, name="Meta"):
     def __init__(self, bot) -> None:
         self.bot = bot
 
-    @commands.command()
-    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    async def status(self, ctx: Context):
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 10)
+    async def status(self, interaction: Interaction):
         """Returns the status of the bot.
 
         Information like uptime, python version and linux version.
@@ -54,10 +55,10 @@ class MetaCog(commands.Cog, name="Meta"):
             name="Watching", value=f"{tot_guilds} guilds - {tot_users} users"
         )
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @commands.command()
-    async def source(self, ctx: Context):
+    @app_commands.command()
+    async def source(self, interaction: Interaction):
         """Returns the link to the bot's source code.
 
         Proudly hosted by GitHub.
@@ -67,10 +68,10 @@ class MetaCog(commands.Cog, name="Meta"):
         embed.set_author(name="Milton Library Assistant")
         embed.title = "Find me on GitHub!"
         embed.url = r"https://github.com/MrHedmad/Milton"
-        await ctx.send(embed=embed)
+        await interaction.response.send(embed=embed)
 
-    @commands.command()
-    async def ping(self, ctx: Context):
+    @app_commands.command()
+    async def ping(self, interaction: Interaction):
         """Pong!
 
         Returns the discord websocket latency, kinda like the ping of the bot.
@@ -80,56 +81,39 @@ class MetaCog(commands.Cog, name="Meta"):
         embed = discord.Embed()
         embed.title = "**Pong!**"
         embed.add_field(name="Discord Websocket Latency", value=str(self.bot.latency))
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @commands.group(
-        name="changes",
-        aliases=("changelog", "log", "notes"),
-        invoke_without_command=True,
-    )
-    async def changes_group(self, ctx):
+    @app_commands.command(name="changes")
+    async def changes(self, interaction: Interaction):
         """Display the full changelog for the bot"""
         out = self.bot.changelog.to_paginator()
-        await out.paginate(ctx)
+        out.url = r"https://github.com/MrHedmad/Milton/blob/master/CHANGELOG.md"
+        out.title = "Milton Library Assistant Changelog"
+        await out.paginate(interaction)
 
-    @changes_group.command()
-    async def link(self, ctx: Context):
-        """Returns the link to the bot's full changelog.
-
-        For those who prefer a less interactive changelog.
-        Proudly hosted by GitHub.
-        """
-        embed = discord.Embed()
-        embed.set_thumbnail(url=str(self.bot.user.display_avatar.url))
-        embed.set_author(name="Milton Library Assistant")
-        embed.title = "Read my full changelog on GitHub!"
-        embed.url = r"https://github.com/MrHedmad/Milton/blob/master/CHANGELOG.md"
-        await ctx.send(embed=embed)
-
-    @commands.command(name="inside", invoke_without_command=True)
-    @commands.guild_only()
-    @in_home_guild()
-    async def subscribe(self, ctx: Context):
+    @app_commands.command(name="inside")
+    @app_commands.guilds(discord.Object(id=311200788858798080))
+    async def subscribe(self, interaction: Interaction):
         """Subscribe to announcements and other things."""
-        if (role := ctx.guild.get_role(777612764222717992)) :
-            if role not in ctx.author.roles:
+        if (role := interaction.guild.get_role(777612764222717992)) :
+            if role not in interaction.message.author.roles:
                 try:
-                    await ctx.author.add_roles(role)
+                    await interaction.message.author.add_roles(role)
                 except Forbidden:
                     raise MiltonInputError("I do not have powers here... :(")
                 embed = discord.Embed(title="You are now inside!")
                 with pkg_resources.path("milton.resources", "insiders.txt") as path:
                     embed.set_image(url=get_random_line(path))
-                await ctx.send(embed=embed)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
             else:
                 try:
-                    await ctx.author.remove_roles(role)
+                    await interaction.message.author.remove_roles(role)
                 except Forbidden:
                     raise MiltonInputError("I do not have powers here... :(")
                 embed = discord.Embed(title="You are no longer inside.")
                 with pkg_resources.path("milton.resources", "noinsiders.txt") as path:
                     embed.set_image(url=get_random_line(path))
-                await ctx.send(embed=embed)
+                await interaction.response.send(embed=embed)
 
 
 async def setup(bot: Milton):

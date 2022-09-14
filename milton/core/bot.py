@@ -99,6 +99,8 @@ class Milton(commands.Bot):
             except ExtensionNotFound as e:
                 log.exception(e)
                 continue
+        
+        await self.tree.sync()
 
     async def add_cog(self, cog: commands.Cog):
         await super().add_cog(cog)

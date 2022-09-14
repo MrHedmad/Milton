@@ -6,7 +6,8 @@ import importlib.resources as pkg_resources
 
 import discord
 from discord.ext import commands
-from discord.ext.commands.context import Context
+from discord import app_commands
+from discord import Interaction
 
 from milton.core.bot import Milton
 from milton.core.config import CONFIG
@@ -24,27 +25,14 @@ class Toys(commands.Cog, name="Toys"):
     def __init__(self, bot: Milton) -> None:
         self.bot: Milton = bot
 
-    @commands.command()
-    async def roll(self, ctx: Context, dice: str):
+    @app_commands.command()
+    async def roll(self, interaction: Interaction, number: app_commands.Range[int, 1, 100], sides: app_commands.Range[int, 1, 50000]):
         """Roll some dice, like 1d20, or 100d1000!
 
         Accepts any combination of `<nr. dice>d<faces>`, up to 100 dice with
         50000 faces.
         """
         out = Paginator()
-
-        try:
-            number, sides = [abs(int(x)) for x in dice.split("d")]
-        except (IndexError, ValueError):
-            raise MiltonInputError(
-                "Cannot parse message. Please restate. Try: $roll 1d20"
-            )
-
-        if number > 100:
-            raise MiltonInputError("I'm sorry, I cannot roll that many dice.")
-
-        if sides > 50000:
-            raise MiltonInputError("I'm sorry, I cannot roll dice that big.")
 
         message = "Rolling {}: ".format((str(number) + "d" + str(sides)))
 
@@ -63,10 +51,10 @@ class Toys(commands.Cog, name="Toys"):
         summation = sum(results)
         message += f" = **{summation}**"
         out.add_line(message)
-        return await out.paginate(ctx)
+        return await out.paginate(interaction)
 
-    @commands.command()
-    async def fact(self, ctx: Context):
+    @app_commands.command()
+    async def fact(self, interaction: Interaction):
         """Send a totally accurate fact.
 
         Fact is guaranteed(tm) to be 99.8% accurate.
@@ -75,7 +63,7 @@ class Toys(commands.Cog, name="Toys"):
             embed = discord.Embed(
                 description=get_random_line(path)
             )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot):
