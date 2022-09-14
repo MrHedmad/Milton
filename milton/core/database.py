@@ -312,22 +312,22 @@ async def get_all_from(doc: Type[Document]) -> Tuple[str, Document]:
         yield (_id, doc(_id))
 
 
-async def milton_users():
+def milton_users():
     """A wrapper for get_all_from for the User class"""
     return get_all_from(MiltonUser)
 
 
-async def milton_channels():
+def milton_channels():
     """A wrapper for get_all_from for the Channel class"""
     return get_all_from(MiltonChannel)
 
 
-async def milton_guilds():
+def milton_guilds():
     """A wrapper for get_all_from for the Guilds class"""
     return get_all_from(MiltonGuild)
 
 
-async def milton_roles():
+def milton_roles():
     """A wrapper for get_all_from for the Roles class"""
     return get_all_from(MiltonRoles)
 

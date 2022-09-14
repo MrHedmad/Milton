@@ -108,7 +108,7 @@ class Paginator(commands.Paginator):
 
         # Add a handy descriptive footer
         embed.set_footer(text=f"Page {current_page + 1} / {max_pages}")
-
+    
         await interaction.response.send_message(embed=embed)
         message: Message = await interaction.original_response()
 

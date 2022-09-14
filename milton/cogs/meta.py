@@ -14,7 +14,6 @@ from discord.ext.commands.context import Context
 
 from milton.core.bot import Milton
 from milton.core.errors import MiltonInputError
-from milton.utils.checks import in_home_guild
 from milton.utils.tools import get_random_line
 
 
@@ -84,11 +83,7 @@ class MetaCog(commands.Cog, name="Meta"):
         embed.add_field(name="Discord Websocket Latency", value=str(self.bot.latency))
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(
-        name="changes",
-        aliases=("changelog", "log", "notes"),
-        invoke_without_command=True,
-    )
+    @app_commands.command(name="changes")
     async def changes(self, interaction: Interaction):
         """Display the full changelog for the bot"""
         out = self.bot.changelog.to_paginator()
@@ -96,30 +91,29 @@ class MetaCog(commands.Cog, name="Meta"):
         out.title = "Milton Library Assistant Changelog"
         await out.paginate(interaction)
 
-    @commands.command(name="inside", invoke_without_command=True)
-    @commands.guild_only()
-    @in_home_guild()
-    async def subscribe(self, ctx: Context):
+    @app_commands.command(name="inside")
+    @app_commands.guilds(discord.Object(id=311200788858798080))
+    async def subscribe(self, interaction: Interaction):
         """Subscribe to announcements and other things."""
-        if (role := ctx.guild.get_role(777612764222717992)) :
-            if role not in ctx.author.roles:
+        if (role := interaction.guild.get_role(777612764222717992)) :
+            if role not in interaction.message.author.roles:
                 try:
-                    await ctx.author.add_roles(role)
+                    await interaction.message.author.add_roles(role)
                 except Forbidden:
                     raise MiltonInputError("I do not have powers here... :(")
                 embed = discord.Embed(title="You are now inside!")
                 with pkg_resources.path("milton.resources", "insiders.txt") as path:
                     embed.set_image(url=get_random_line(path))
-                await ctx.send(embed=embed)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
             else:
                 try:
-                    await ctx.author.remove_roles(role)
+                    await interaction.message.author.remove_roles(role)
                 except Forbidden:
                     raise MiltonInputError("I do not have powers here... :(")
                 embed = discord.Embed(title="You are no longer inside.")
                 with pkg_resources.path("milton.resources", "noinsiders.txt") as path:
                     embed.set_image(url=get_random_line(path))
-                await ctx.send(embed=embed)
+                await interaction.response.send(embed=embed)
 
 
 async def setup(bot: Milton):
