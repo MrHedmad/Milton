@@ -42,7 +42,7 @@ class Errors(commands.Cog, name="errors"):
     @commands.Cog.listener("on_error")
     async def get_error(self, event, *args, **kwargs):
         """Error handler"""
-        print(f"! Unexpected Internal Error: (event) {event}, (args) {args}, (kwargs) {kwargs}.")
+        log.error(f"! Unexpected Internal Error: (event) {event}, (args) {args}, (kwargs) {kwargs}.")
 
     @commands.Cog.listener("on_command_error")
     async def get_command_error(self, ctx: commands.Context, error: commands.CommandError):
@@ -58,6 +58,8 @@ class Errors(commands.Cog, name="errors"):
             else:
                 discord_message = await ctx.send(self.default_error_message)
                 edit = discord_message.edit
+
+            log.exception(error)
 
             raise error
 
@@ -111,7 +113,8 @@ class Errors(commands.Cog, name="errors"):
         except MiltonInputError as e:
             await edit(content=f"Cannot parse your input, sorry: {e.msg}")
         except Exception as e:
-            self.trace_error("get_command_error", e)
+            pass
+            #log.error(e)
 
 
     @commands.Cog.listener("on_app_command_error")
@@ -122,6 +125,8 @@ class Errors(commands.Cog, name="errors"):
         try:
             await self.__respond_to_interaction(interaction)
             edit = interaction.edit_original_response
+
+            log.exception(error)
 
             raise error
         except app_commands.CommandInvokeError as d_error:
@@ -148,8 +153,8 @@ class Errors(commands.Cog, name="errors"):
             app_commands.CommandAlreadyRegistered
             app_commands.CommandSignatureMismatch
             """
-
-            log.exception(e)
+            pass
+            #log.exception(e)
 
     @commands.Cog.listener("on_view_error")
     async def get_view_error(self, interaction: discord.Interaction, error: Exception, item: any):
