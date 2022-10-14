@@ -198,7 +198,7 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
 
         async with MiltonGuild(guild_id) as milton_guild:
             if not milton_guild["birthdays"]:
-                await interaction.response.send("Nobody registered a birthday in this server, sorry.")
+                await interaction.response.send_message("Nobody registered a birthday in this server, sorry.")
                 return
             docs = [(x, y) for x, y in milton_guild["birthdays"].items()]
         docs = sorted(docs, key=lambda x: time_to_bday(x[1]))
@@ -227,7 +227,7 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         if do_paginate:
             await out.paginate(interaction)
         else:
-            await interaction.response.send("Nobody registered a birthday in this server, sorry.")
+            await interaction.response.send_message("Nobody registered a birthday in this server, sorry.")
 
     @app_commands.command(name = "set")
     async def register(self, interaction: Interaction, month: Months, day: app_commands.Range[int, 1, 31], year: app_commands.Range[int, 1000, 9999]):

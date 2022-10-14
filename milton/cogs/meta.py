@@ -68,7 +68,7 @@ class MetaCog(commands.Cog, name="Meta"):
         embed.set_author(name="Milton Library Assistant")
         embed.title = "Find me on GitHub!"
         embed.url = r"https://github.com/MrHedmad/Milton"
-        await interaction.response.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
     @app_commands.command()
     async def ping(self, interaction: Interaction):
@@ -113,7 +113,7 @@ class MetaCog(commands.Cog, name="Meta"):
                 embed = discord.Embed(title="You are no longer inside.")
                 with pkg_resources.path("milton.resources", "noinsiders.txt") as path:
                     embed.set_image(url=get_random_line(path))
-                await interaction.response.send(embed=embed)
+                await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot: Milton):
