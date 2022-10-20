@@ -50,6 +50,7 @@ class RSSCog(commands.GroupCog, name = "xkcd"):
     @app_commands.command()
     @app_commands.checks.has_permissions(administrator=True)
     async def here(self, interaction: Interaction):
+        """Send updates when new XKCD issues come out in this channel."""
         guild_id = interaction.guild_id
         channel_id = interaction.channel_id
 
@@ -66,6 +67,7 @@ class RSSCog(commands.GroupCog, name = "xkcd"):
     @app_commands.command()
     @app_commands.checks.has_permissions(administrator=True)
     async def silence(self, interaction: Interaction):
+        """Stop sending XKCD updates in this guild."""
         guild_id = interaction.guild_id
 
         log.info(f"Removing xkcd shout channel for guild {guild_id}")
