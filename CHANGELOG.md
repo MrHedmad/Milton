@@ -10,6 +10,11 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [Unreleased]
+### Changed
+- Moved from MongoDB to SQLite.
+
+
 ## [0.6.2] - 2022-10-14
 ### Fixed
 - Some commands in the birthday cog were not migrated correctly. This should be fixed now.

@@ -8,7 +8,6 @@ from typing import Optional
 from aioconsole import ainput
 from discord.errors import HTTPException
 from discord.ext import commands
-from discord.ext import tasks
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
 from discord.ext.commands.errors import ExtensionNotFound
 from discord.ext.commands.errors import ExtensionNotLoaded

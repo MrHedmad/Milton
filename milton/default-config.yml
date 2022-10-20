@@ -24,9 +24,8 @@ bot:
   ]
 
 database:
-  # >> Set the name for the database in mongoDB. Can be useful if multiple
-  # instanced of the bot have to run simultaneously with different databases.
-  identifier: "milton_bot"
+  # >> Set where the database will be stored.
+  path: "~/.milton/database.sqlite"
 
 # >> Set the path for the logs.
 # Additional logs are created alongside the main one during runtime.
