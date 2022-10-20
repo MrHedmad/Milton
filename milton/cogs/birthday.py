@@ -15,6 +15,7 @@ from milton.core.errors import MiltonInputError
 from milton.utils import tasks
 from milton.utils.paginator import Paginator
 from milton.utils.enums import Months
+from milton.utils.tools import unwrap
 
 log = logging.getLogger(__name__)
 
@@ -122,7 +123,9 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         Takes a guild_id of a guild THAT HAS SET THE SHOUT CHANNEL!!
         """
         async with self.bot.db.execute(f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = {guild_id}") as cursor:
-            shout_channel_id = await cursor.fetchone()[0]
+            shout_channel_id = await cursor.fetchone()
+        
+        shout_channel_id = unwrap(shout_channel_id)
 
         assert shout_channel_id is not None
 
@@ -197,9 +200,9 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
             async for row in cursor:
                 if row[1] is None:
                     # This has no year
-                    birthdays.append((row[0], f"{row[2]}-{row[3]}"))
+                    birthdays.append((row[0], f"{row[2]:02}-{row[3]:02}"))
                 else:
-                    birthdays.append((row[0]), f"{row[2]}-{row[3]}-{row[1]}")
+                    birthdays.append((row[0], f"{row[2]:02}-{row[3]:02}-{row[1]:04}"))
         
         if not birthdays:
             await interaction.response.send_message("Nobody registered a birthday in this server, sorry.")
@@ -239,18 +242,23 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         if not interaction.guild:
             interaction.response.send_message("You must use this in a guild.", ephemeral=True)
 
+        month = month.value
+
         guild_id = str(interaction.guild.id)
         user_id = str(interaction.user.id)
 
         log.debug(f"Updating birthday of user {user_id} in guild {guild_id}")
 
+        # TODO: Check if the date is OK
+
         await self.bot.db.execute((
             "INSERT INTO birthdays "
             "(guild_id, user_id, year, day, month) "
-            f"VALUES ({guild_id}, {user_id}, {year}, {day}, {month}) "
-            f"ON CONFLICT DO UPDATE SET year = {year}, day = {day}, month = {month} "
-            f"WHERE guild_id = {guild_id}, user_id = {user_id}"
-        ))
+            f"VALUES (:guild_id, :user_id, :year, :day, :month) "
+            f"ON CONFLICT DO UPDATE SET year = :year, day = :day, month = :month "
+            f"WHERE guild_id = :guild_id AND user_id = :user_id"
+        ),
+        (guild_id, user_id, year, day, month))
         await self.bot.db.commit()
 
         await interaction.response.send_message("Huzzah! I will now remember your birthday.")
@@ -267,7 +275,7 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
 
         log.debug(f"Removing birthday of user {user_id} in guild {guild_id}")
 
-        await self.bot.db.execute(f"DELETE FROM birthdays WHERE guild_id = {guild_id}, user_id = {user_id}")
+        await self.bot.db.execute(f"DELETE FROM birthdays WHERE guild_id = {guild_id} AND user_id = {user_id}")
         await self.bot.db.commit()
 
         await interaction.response.send_message("Sure! I forgot your birthday for this server. Bye!")
@@ -344,8 +352,7 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         async with self.bot.db.execute(f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = {guild_id}") as cursor:
             shout_channel = await cursor.fetchone()
         
-        if type(shout_channel) is tuple:
-            shout_channel = shout_channel[0]
+        shout_channel = unwrap(shout_channel)
 
         if shout_channel is not None:
             await interaction.response.send_message("Checking birthdays, please wait.", ephemeral=True)

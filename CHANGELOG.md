@@ -10,14 +10,18 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
-## [Unreleased]
+## [1.0.0-beta] - 2022-10-20
 ### Changed
-- Moved from MongoDB to SQLite.
+- Moved from MongoDB to SQLite. It should be faster, safer, and easier to set up.
+- The xkcd cog can now handle sending the issue to multiple servers.
+### Added
+- Database schema migrations should be applied magically when the bot updates.
 
 
 ## [0.6.2] - 2022-10-14
 ### Fixed
 - Some commands in the birthday cog were not migrated correctly. This should be fixed now.
+
 
 ## [0.6.1] - 2022-09-05
 ### Changed

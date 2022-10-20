@@ -15,9 +15,11 @@ CREATE TABLE birthdays (
 CREATE TABLE guild_config (
     guild_id INT PRIMARY KEY,
     bday_shout_channel INT,
-    xcd_shout_channel INT
+    xkcd_shout_channel INT
 );
 
-CREATE TABLE meta (
-    last_sent_xkcd TEXT
+CREATE TABLE xkcd (
+    guild_id INT PRIMARY KEY,
+    last_sent_xkcd TEXT,
+    shout_channel INT UNIQUE
 );

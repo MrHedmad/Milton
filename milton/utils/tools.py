@@ -6,7 +6,7 @@ from datetime import time
 from datetime import timedelta
 from difflib import get_close_matches
 from pathlib import Path
-from typing import List
+from typing import Any, List
 from typing import Mapping
 from typing import Optional
 from typing import Tuple
@@ -160,3 +160,27 @@ def id_from_mention(mention: str) -> Tuple[int, Optional[str]]:
         return int(mention.rstrip(">").lstrip("<@!#&")), type_
     except ValueError:
         raise ValueError("Cannot parse mention")
+
+
+def unwrap(tup: Tuple) -> Union[tuple, Any]:
+    if type(tup) is not tuple:
+        return tup
+    
+    if len(tup) == 1:
+        return tup[0]
+    
+    return tup
+
+def unwrap_or_error(tup: Tuple) -> Any:
+    try:
+        _ = iter(tup)
+    except TypeError:
+        return tup
+
+    if type(tup) is not Tuple:
+        raise ValueError(f"Failed to unwrap {tup} - not a tuple.")
+    
+    if len(tup) != 1:
+        raise ValueError(f"Tuple {tup} has more than one element.")
+    
+    return tup[0]
