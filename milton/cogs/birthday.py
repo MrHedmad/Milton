@@ -250,13 +250,15 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         log.debug(f"Updating birthday of user {user_id} in guild {guild_id}")
 
         # TODO: Check if the date is OK
+        await self.bot.db.execute((
+            "DELETE FROM birthdays WHERE guild_id = :guild_id AND user_id = :user_id"
+        ), (guild_id, user_id))
+        await self.bot.db.commit()
 
         await self.bot.db.execute((
             "INSERT INTO birthdays "
             "(guild_id, user_id, year, day, month) "
             f"VALUES (:guild_id, :user_id, :year, :day, :month) "
-            f"ON CONFLICT DO UPDATE SET year = :year, day = :day, month = :month "
-            f"WHERE guild_id = :guild_id AND user_id = :user_id"
         ),
         (guild_id, user_id, year, day, month))
         await self.bot.db.commit()
