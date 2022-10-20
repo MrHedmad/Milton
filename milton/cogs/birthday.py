@@ -304,7 +304,7 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
             "INSERT INTO guild_config "
             "(guild_id, bday_shout_channel) "
             f"VALUES ({guild_id}, {channel_id}) "
-            f"ON CONFLICT DO UPDATE SET bday_shout_channel = {channel_id} WHERE guild_id = {guild_id}"
+            f"ON CONFLICT (guild_id) DO UPDATE SET bday_shout_channel = {channel_id} WHERE guild_id = {guild_id}"
         ))
         await self.bot.db.commit()
 
