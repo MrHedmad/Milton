@@ -75,9 +75,6 @@ def is_today(this: dt.date, other: dt.date) -> bool:
 
 def clean_date(date: Optional[str]):
     """This shouldn't have been necessary...
-
-    Fixes people entering non-0 padded dates.
-    Mostly done to appease Dragon's OCD.
     """
     if not date:
         return date
@@ -241,15 +238,25 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         """Registers a new birthday for yourself."""
         if not interaction.guild:
             interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+            return
 
         month = month.value
 
         guild_id = str(interaction.guild.id)
         user_id = str(interaction.user.id)
 
-        log.debug(f"Updating birthday of user {user_id} in guild {guild_id}")
+        try:
+            if year:
+                birth_from_str(f"{day:02}-{month:02}")
+            else:
+                birth_from_str(f"{day:02}-{month:02}-{year:04}")
+        except ValueError:
+            log.debug("Inputted birthday is not parseable to a date.")
+            interaction.response.send_message("Oh, silly! That isn't a real day!")
+            return
 
-        # TODO: Check if the date is OK
+        log.debug(f"Updating birthday of user {user_id} in guild {guild_id}")
+        
         await self.bot.db.execute((
             "DELETE FROM birthdays WHERE guild_id = :guild_id AND user_id = :user_id"
         ), (guild_id, user_id))
