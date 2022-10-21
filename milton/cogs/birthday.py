@@ -119,7 +119,8 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         Takes a guild_id of a guild THAT HAS SET THE SHOUT CHANNEL!!
         """
         async with self.bot.db.execute(
-            f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = {guild_id}"
+            f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = :guild_id",
+            (guild_id,),
         ) as cursor:
             shout_channel_id = await cursor.fetchone()
 
@@ -131,7 +132,8 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         today = dt.date.today()
 
         async with self.bot.db.execute(
-            f"SELECT user_id, year, day, month FROM birthdays WHERE guild_id = {guild_id}"
+            f"SELECT user_id, year, day, month FROM birthdays WHERE guild_id = :guild_id",
+            (guild_id,),
         ) as cursor:
             async for row in cursor:
                 user_id, year, day, month = row
@@ -175,7 +177,8 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
                     )
                 )
                 await self.bot.db.execute(
-                    f"UPDATE guild_config SET bday_shout_channel = NULL WHERE guild_id = {guild_id}"
+                    f"UPDATE guild_config SET bday_shout_channel = NULL WHERE guild_id = :guild_id",
+                    (guild_id,),
                 )
                 await self.bot.db.commit()
 
@@ -199,7 +202,8 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
 
         birthdays = []
         async with self.bot.db.execute(
-            f"SELECT user_id, year, day, month FROM birthdays WHERE guild_id = {guild_id}"
+            f"SELECT user_id, year, day, month FROM birthdays WHERE guild_id = :guild_id",
+            (guild_id,),
         ) as cursor:
             async for row in cursor:
                 if row[1] is None:
@@ -286,7 +290,7 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
             (
                 "INSERT INTO birthdays "
                 "(guild_id, user_id, year, day, month) "
-                f"VALUES (:guild_id, :user_id, :year, :day, :month) "
+                "VALUES (:guild_id, :user_id, :year, :day, :month) "
             ),
             (guild_id, user_id, year, day, month),
         )
@@ -310,7 +314,8 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         log.debug(f"Removing birthday of user {user_id} in guild {guild_id}")
 
         await self.bot.db.execute(
-            f"DELETE FROM birthdays WHERE guild_id = {guild_id} AND user_id = {user_id}"
+            "DELETE FROM birthdays WHERE guild_id = :guild_id AND user_id = :user_id",
+            (guild_id, user_id),
         )
         await self.bot.db.commit()
 
@@ -342,9 +347,10 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
             (
                 "INSERT INTO guild_config "
                 "(guild_id, bday_shout_channel) "
-                f"VALUES ({guild_id}, {channel_id}) "
-                f"ON CONFLICT (guild_id) DO UPDATE SET bday_shout_channel = {channel_id} WHERE guild_id = {guild_id}"
-            )
+                "VALUES (:guild_id, :channel_id) "
+                "ON CONFLICT (guild_id) DO UPDATE SET bday_shout_channel = :channel_id WHERE guild_id = :guild_id"
+            ),
+            (guild_id, channel_id),
         )
         await self.bot.db.commit()
 
@@ -376,8 +382,9 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         await self.bot.db.execute(
             (
                 "UPDATE OR IGNORE birthdays SET bday_shout_channel = NULL "
-                f"WHERE guild_id = {guild_id}"
-            )
+                "WHERE guild_id = :guild_id"
+            ),
+            (guild_id,),
         )
         await self.bot.db.commit()
 
@@ -400,7 +407,8 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         guild_id = str(interaction.guild.id)
 
         async with self.bot.db.execute(
-            f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = {guild_id}"
+            f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = :guild_id",
+            (guild_id,),
         ) as cursor:
             shout_channel = await cursor.fetchone()
 
