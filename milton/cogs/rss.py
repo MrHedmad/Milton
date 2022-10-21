@@ -5,9 +5,8 @@ import re
 
 import discord
 import feedparser
+from discord import Interaction, app_commands
 from discord.ext import commands
-from discord import app_commands
-from discord import Interaction
 
 from milton.core.bot import Milton
 from milton.utils import tasks
@@ -35,7 +34,7 @@ async def get_last_xkcd(session):
     return embed
 
 
-class RSSCog(commands.GroupCog, name = "xkcd"):
+class RSSCog(commands.GroupCog, name="xkcd"):
     def __init__(self, bot) -> None:
         self.bot: Milton = bot
 
@@ -46,7 +45,7 @@ class RSSCog(commands.GroupCog, name = "xkcd"):
         """Send the latest XKCD issue."""
         embed = await get_last_xkcd(self.bot.http_session)
         await interaction.response.send_message(embed=embed)
-    
+
     @app_commands.command()
     @app_commands.checks.has_permissions(administrator=True)
     async def here(self, interaction: Interaction):
@@ -55,14 +54,19 @@ class RSSCog(commands.GroupCog, name = "xkcd"):
         channel_id = interaction.channel_id
 
         log.info(f"Updating xkcd shout channel for guild {guild_id} to {channel_id}")
-        await self.bot.db.execute((
-            "INSERT INTO xkcd (guild_id, shout_channel) VALUES (:guild_id, :channel_id) "
-            "ON CONFLICT (guild_id) DO UPDATE SET shout_channel = :channel_id "
-            "WHERE guild_id = :guild_id"
-        ), (guild_id, channel_id))
+        await self.bot.db.execute(
+            (
+                "INSERT INTO xkcd (guild_id, shout_channel) VALUES (:guild_id, :channel_id) "
+                "ON CONFLICT (guild_id) DO UPDATE SET shout_channel = :channel_id "
+                "WHERE guild_id = :guild_id"
+            ),
+            (guild_id, channel_id),
+        )
         await self.bot.db.commit()
 
-        await interaction.response.send_message("I will send the xkcd issues here from now on!")
+        await interaction.response.send_message(
+            "I will send the xkcd issues here from now on!"
+        )
 
     @app_commands.command()
     @app_commands.checks.has_permissions(administrator=True)
@@ -71,9 +75,9 @@ class RSSCog(commands.GroupCog, name = "xkcd"):
         guild_id = interaction.guild_id
 
         log.info(f"Removing xkcd shout channel for guild {guild_id}")
-        await self.bot.db.execute((
-            "DELETE FROM xkcd WHERE guild_id = :guild_id"
-        ), (guild_id,))
+        await self.bot.db.execute(
+            ("DELETE FROM xkcd WHERE guild_id = :guild_id"), (guild_id,)
+        )
         await self.bot.db.commit()
 
         await interaction.response.send_message("I won't send the xkcd issues anymore.")
@@ -84,7 +88,9 @@ class RSSCog(commands.GroupCog, name = "xkcd"):
         log.info("Checking for new xkcd issues...")
         embed = await get_last_xkcd(self.bot.http_session)
 
-        async with self.bot.db.execute("SELECT last_sent_xkcd, shout_channel FROM xkcd") as cursor:
+        async with self.bot.db.execute(
+            "SELECT last_sent_xkcd, shout_channel FROM xkcd"
+        ) as cursor:
             async for row in cursor:
                 last_title, shout_channel = row
 
@@ -95,7 +101,9 @@ class RSSCog(commands.GroupCog, name = "xkcd"):
                 channel = self.bot.get_channel(shout_channel)
 
                 if not channel:
-                    log.warning(f"Couldn't find the channel to send the xkcd message to ({shout_channel}).")
+                    log.warning(
+                        f"Couldn't find the channel to send the xkcd message to ({shout_channel})."
+                    )
                     return
 
                 await channel.send(embed=embed)
@@ -103,7 +111,9 @@ class RSSCog(commands.GroupCog, name = "xkcd"):
         last_title = embed.title
         # Update all rows with the new xkcd.
         # I mean, it might not have been sent, but who cares...
-        await self.bot.db.execute("UPDATE xkcd SET last_sent_xkcd = :last_title", (last_title,))
+        await self.bot.db.execute(
+            "UPDATE xkcd SET last_sent_xkcd = :last_title", (last_title,)
+        )
         await self.bot.db.commit()
 
     @check_xkcd_task.before_loop

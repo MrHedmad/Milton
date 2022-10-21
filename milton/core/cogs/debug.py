@@ -1,9 +1,6 @@
-import pprint
-
-from discord.ext import commands
 import discord
-from discord import app_commands
-from discord import Interaction
+from discord import Interaction, app_commands
+from discord.ext import commands
 from discord.ext.commands.context import Context
 
 from milton.core.bot import Milton
@@ -57,10 +54,12 @@ class DebugCog(commands.GroupCog, name="debug"):
             raise MiltonInputError("Cannot Find User")
 
         out = Paginator(force_embed=True, title=f"Data for user {member.name}")
-        
+
         formatted = []
         bday_keys = "guild_id, user_id, year, day, month"
-        async with self.bot.db.execute(f"SELECT {bday_keys} FROM birthdays WHERE user_id = {member.id}") as cursor:
+        async with self.bot.db.execute(
+            f"SELECT {bday_keys} FROM birthdays WHERE user_id = {member.id}"
+        ) as cursor:
             birthday_data = await cursor.fetchall()
 
         if birthday_data:

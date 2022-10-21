@@ -1,23 +1,20 @@
-from pathlib import Path
-import aiosqlite
 import logging
 import sys
 import time
+from pathlib import Path
 from typing import Callable
 
 import aiohttp
+import aiosqlite
 import discord
 from box import Box
 from discord.abc import PrivateChannel
 from discord.ext import commands
-from discord.ext.commands.bot import when_mentioned
-from discord.ext.commands.bot import when_mentioned_or
+from discord.ext.commands.bot import when_mentioned, when_mentioned_or
 from discord.ext.commands.errors import ExtensionNotFound
 
 from milton import ROOT
-from milton.core.changelog_parser import Changelog
-from milton.core.changelog_parser import make_changelog
-from milton.core.changelog_parser import Version
+from milton.core.changelog_parser import Changelog, Version, make_changelog
 from milton.core.config import CONFIG
 
 log = logging.getLogger(__name__)
@@ -91,7 +88,7 @@ class Milton(commands.Bot):
             except ExtensionNotFound as e:
                 log.exception(e)
                 continue
-        
+
         await self.tree.sync()
 
         db_path = Path(CONFIG.database.path).expanduser().absolute()
@@ -104,10 +101,10 @@ class Milton(commands.Bot):
     async def on_ready(self):
         log.info(f"Logged in as {self.user}. Ready.")
 
-    async def migrate(self, initialize = False):
+    async def migrate(self, initialize=False):
         migrations = list((ROOT / "schemas").iterdir())
         migrations.remove([x for x in migrations if x.name == "__init__.py"][0])
-        migrations.sort(key = lambda x: x.stem)
+        migrations.sort(key=lambda x: x.stem)
 
         if initialize:
             log.info("Initializing new empty DB.")
@@ -119,22 +116,24 @@ class Milton(commands.Bot):
         async with self.db.execute("SELECT version FROM version") as cursor:
             db_version = await cursor.fetchone()
             db_version = db_version[0]
-        
+
         latest_version = int(migrations[-1].stem)
         if db_version == latest_version:
             log.info("No migrations to apply.")
             return
         elif db_version > latest_version:
-            log.info(f"The DB is in the future! db: {db_version}, migration: {latest_version}")
+            log.info(
+                f"The DB is in the future! db: {db_version}, migration: {latest_version}"
+            )
 
         log.info("Found migrations to apply.")
-        to_apply = migrations[(db_version + 1):]
+        to_apply = migrations[(db_version + 1) :]
         log.info(f"Applying {len(to_apply)} migration(s).")
         for migration in to_apply:
             log.debug(f"Applying migration {migration}...")
             await self.db.executescript(migration.read_text())
             await self.db.commit()
-        
+
         log.info("Done migrating database to new schema.")
 
     async def add_cog(self, cog: commands.Cog):
@@ -162,10 +161,10 @@ class Milton(commands.Bot):
         if self.http_session:
             log.info("Closing AIOHTTP session...")
             await self.http_session.close()
-        
+
         log.info("Closing database connection...")
         await self.db.close()
-        
+
         log.info("Closing bot loop...")
         await super().close()
 

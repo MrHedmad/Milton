@@ -23,7 +23,11 @@ if Path(_LOG_PATH).parent.exists() is False:
     os.makedirs(Path(_LOG_PATH).parent)
 
 file_h = RotatingFileHandler(
-    filename=Path(_LOG_PATH), encoding="utf-8", mode="a+", maxBytes=1e5, backupCount=5,
+    filename=Path(_LOG_PATH),
+    encoding="utf-8",
+    mode="a+",
+    maxBytes=1e5,
+    backupCount=5,
 )
 file_h.setFormatter(formatter)
 file_h.setLevel(CONFIG.logs.file_level)

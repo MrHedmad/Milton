@@ -55,5 +55,5 @@ def in_home_guild() -> Callable:
 
     def predicate(ctx):
         return ctx.guild.id == 311200788858798080
-    
+
     return check(predicate)

@@ -5,16 +5,14 @@ import logging
 from datetime import datetime
 from typing import Optional
 
+from discord import Interaction, app_commands
 from discord.ext import commands
-from discord import app_commands
-from discord import Interaction
 
 from milton.core.bot import Milton
 from milton.core.config import CONFIG
-from milton.core.errors import MiltonInputError
 from milton.utils import tasks
-from milton.utils.paginator import Paginator
 from milton.utils.enums import Months
+from milton.utils.paginator import Paginator
 from milton.utils.tools import unwrap
 
 log = logging.getLogger(__name__)
@@ -48,7 +46,7 @@ def time_to_bday(date: Optional[str]) -> Optional[int]:
         Date: A parseable string to check.
     """
     now = datetime.now()
-    if (date := birth_from_str(date)) :
+    if date := birth_from_str(date):
         date = date.replace(year=now.year)
         diff = date - now
 
@@ -74,8 +72,7 @@ def is_today(this: dt.date, other: dt.date) -> bool:
 
 
 def clean_date(date: Optional[str]):
-    """This shouldn't have been necessary...
-    """
+    """This shouldn't have been necessary..."""
     if not date:
         return date
 
@@ -105,7 +102,9 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         """Tasks the checking of the birthdays in a loop"""
         log.info("Checking today's birthdays...")
 
-        async with self.bot.db.execute("SELECT guild_id, bday_shout_channel FROM guild_config") as cursor:
+        async with self.bot.db.execute(
+            "SELECT guild_id, bday_shout_channel FROM guild_config"
+        ) as cursor:
             async for row in cursor:
                 if row[1] is not None:
                     await self.check_birthdays(row[0])
@@ -119,9 +118,11 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
 
         Takes a guild_id of a guild THAT HAS SET THE SHOUT CHANNEL!!
         """
-        async with self.bot.db.execute(f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = {guild_id}") as cursor:
+        async with self.bot.db.execute(
+            f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = {guild_id}"
+        ) as cursor:
             shout_channel_id = await cursor.fetchone()
-        
+
         shout_channel_id = unwrap(shout_channel_id)
 
         assert shout_channel_id is not None
@@ -129,10 +130,12 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         out = []
         today = dt.date.today()
 
-        async with self.bot.db.execute(f"SELECT user_id, year, day, month FROM birthdays WHERE guild_id = {guild_id}") as cursor:
+        async with self.bot.db.execute(
+            f"SELECT user_id, year, day, month FROM birthdays WHERE guild_id = {guild_id}"
+        ) as cursor:
             async for row in cursor:
                 user_id, year, day, month = row
-                
+
                 if year:
                     date = f"{day:02}-{month:02}-{year:04}"
                 else:
@@ -171,7 +174,9 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
                         " for this guild."
                     )
                 )
-                await self.bot.db.execute(f"UPDATE guild_config SET bday_shout_channel = NULL WHERE guild_id = {guild_id}")
+                await self.bot.db.execute(
+                    f"UPDATE guild_config SET bday_shout_channel = NULL WHERE guild_id = {guild_id}"
+                )
                 await self.bot.db.commit()
 
     @app_commands.command(name="show")
@@ -193,16 +198,20 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         guild = interaction.guild
 
         birthdays = []
-        async with self.bot.db.execute(f"SELECT user_id, year, day, month FROM birthdays WHERE guild_id = {guild_id}") as cursor:
+        async with self.bot.db.execute(
+            f"SELECT user_id, year, day, month FROM birthdays WHERE guild_id = {guild_id}"
+        ) as cursor:
             async for row in cursor:
                 if row[1] is None:
                     # This has no year
                     birthdays.append((row[0], f"{row[2]:02}-{row[3]:02}"))
                 else:
                     birthdays.append((row[0], f"{row[2]:02}-{row[3]:02}-{row[1]:04}"))
-        
+
         if not birthdays:
-            await interaction.response.send_message("Nobody registered a birthday in this server, sorry.")
+            await interaction.response.send_message(
+                "Nobody registered a birthday in this server, sorry."
+            )
             return
 
         birthdays = sorted(birthdays, key=lambda x: time_to_bday(x[1]))
@@ -231,13 +240,23 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         if do_paginate:
             await out.paginate(interaction)
         else:
-            await interaction.response.send_message("Nobody registered a birthday in this server, sorry.")
+            await interaction.response.send_message(
+                "Nobody registered a birthday in this server, sorry."
+            )
 
-    @app_commands.command(name = "set")
-    async def register(self, interaction: Interaction, month: Months, day: app_commands.Range[int, 1, 31], year: app_commands.Range[int, 1000, 9999] = None):
+    @app_commands.command(name="set")
+    async def register(
+        self,
+        interaction: Interaction,
+        month: Months,
+        day: app_commands.Range[int, 1, 31],
+        year: app_commands.Range[int, 1000, 9999] = None,
+    ):
         """Registers a new birthday for yourself."""
         if not interaction.guild:
-            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+            interaction.response.send_message(
+                "You must use this in a guild.", ephemeral=True
+            )
             return
 
         month = month.value
@@ -256,38 +275,48 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
             return
 
         log.debug(f"Updating birthday of user {user_id} in guild {guild_id}")
-        
-        await self.bot.db.execute((
-            "DELETE FROM birthdays WHERE guild_id = :guild_id AND user_id = :user_id"
-        ), (guild_id, user_id))
+
+        await self.bot.db.execute(
+            ("DELETE FROM birthdays WHERE guild_id = :guild_id AND user_id = :user_id"),
+            (guild_id, user_id),
+        )
         await self.bot.db.commit()
 
-        await self.bot.db.execute((
-            "INSERT INTO birthdays "
-            "(guild_id, user_id, year, day, month) "
-            f"VALUES (:guild_id, :user_id, :year, :day, :month) "
-        ),
-        (guild_id, user_id, year, day, month))
+        await self.bot.db.execute(
+            (
+                "INSERT INTO birthdays "
+                "(guild_id, user_id, year, day, month) "
+                f"VALUES (:guild_id, :user_id, :year, :day, :month) "
+            ),
+            (guild_id, user_id, year, day, month),
+        )
         await self.bot.db.commit()
 
-        await interaction.response.send_message("Huzzah! I will now remember your birthday.")
-
+        await interaction.response.send_message(
+            "Huzzah! I will now remember your birthday."
+        )
 
     @app_commands.command()
     async def remove(self, interaction):
         """Removes the birthday date from yourself."""
         if not interaction.guild:
-            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+            interaction.response.send_message(
+                "You must use this in a guild.", ephemeral=True
+            )
 
         guild_id = str(interaction.guild.id)
         user_id = str(interaction.user.id)
 
         log.debug(f"Removing birthday of user {user_id} in guild {guild_id}")
 
-        await self.bot.db.execute(f"DELETE FROM birthdays WHERE guild_id = {guild_id} AND user_id = {user_id}")
+        await self.bot.db.execute(
+            f"DELETE FROM birthdays WHERE guild_id = {guild_id} AND user_id = {user_id}"
+        )
         await self.bot.db.commit()
 
-        await interaction.response.send_message("Sure! I forgot your birthday for this server. Bye!")
+        await interaction.response.send_message(
+            "Sure! I forgot your birthday for this server. Bye!"
+        )
 
     @app_commands.command()
     @app_commands.checks.has_permissions(administrator=True)
@@ -298,7 +327,9 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         Overwrites any previously set channel.
         """
         if not interaction.guild:
-            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+            interaction.response.send_message(
+                "You must use this in a guild.", ephemeral=True
+            )
 
         guild_id = str(interaction.guild.id)
         channel_id = str(interaction.channel.id)
@@ -307,12 +338,14 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
             f"Setting birthday shout channel for guild {guild_id} to {channel_id}"
         )
 
-        await self.bot.db.execute((
-            "INSERT INTO guild_config "
-            "(guild_id, bday_shout_channel) "
-            f"VALUES ({guild_id}, {channel_id}) "
-            f"ON CONFLICT (guild_id) DO UPDATE SET bday_shout_channel = {channel_id} WHERE guild_id = {guild_id}"
-        ))
+        await self.bot.db.execute(
+            (
+                "INSERT INTO guild_config "
+                "(guild_id, bday_shout_channel) "
+                f"VALUES ({guild_id}, {channel_id}) "
+                f"ON CONFLICT (guild_id) DO UPDATE SET bday_shout_channel = {channel_id} WHERE guild_id = {guild_id}"
+            )
+        )
         await self.bot.db.commit()
 
         await interaction.response.send_message(
@@ -332,19 +365,25 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         Works in any channel, not necessarily that being screamed at.
         """
         if not interaction.guild:
-            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+            interaction.response.send_message(
+                "You must use this in a guild.", ephemeral=True
+            )
 
         guild_id = str(interaction.guild.id)
 
         log.debug(f"Removing birthday shout channel for guild {guild_id}")
 
-        await self.bot.db.execute((
-            "UPDATE OR IGNORE birthdays SET bday_shout_channel = NULL "
-            f"WHERE guild_id = {guild_id}"
-        ))
+        await self.bot.db.execute(
+            (
+                "UPDATE OR IGNORE birthdays SET bday_shout_channel = NULL "
+                f"WHERE guild_id = {guild_id}"
+            )
+        )
         await self.bot.db.commit()
 
-        await interaction.response.send_message(("I will be silent about birthdays from now on."))
+        await interaction.response.send_message(
+            ("I will be silent about birthdays from now on.")
+        )
 
     @app_commands.command()
     @app_commands.checks.has_permissions(administrator=True)
@@ -354,20 +393,28 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         Does not affect the normal check loop.
         """
         if not interaction.guild:
-            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+            interaction.response.send_message(
+                "You must use this in a guild.", ephemeral=True
+            )
 
         guild_id = str(interaction.guild.id)
 
-        async with self.bot.db.execute(f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = {guild_id}") as cursor:
+        async with self.bot.db.execute(
+            f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = {guild_id}"
+        ) as cursor:
             shout_channel = await cursor.fetchone()
-        
+
         shout_channel = unwrap(shout_channel)
 
         if shout_channel is not None:
-            await interaction.response.send_message("Checking birthdays, please wait.", ephemeral=True)
+            await interaction.response.send_message(
+                "Checking birthdays, please wait.", ephemeral=True
+            )
             await self.check_birthdays(guild_id)
         else:
-            await interaction.response.send_message("Sorry, you did not set a shout channel.", ephemeral=True)
+            await interaction.response.send_message(
+                "Sorry, you did not set a shout channel.", ephemeral=True
+            )
 
 
 async def setup(bot):

@@ -1,16 +1,10 @@
 """Collection of utility functions used around the bot"""
 import logging
 import random
-from datetime import datetime
-from datetime import time
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Any, List
-from typing import Mapping
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import Any, List, Mapping, Optional, Tuple, Union
 
 import async_timeout
 from aiohttp import ClientSession
@@ -165,11 +159,12 @@ def id_from_mention(mention: str) -> Tuple[int, Optional[str]]:
 def unwrap(tup: Tuple) -> Union[tuple, Any]:
     if type(tup) is not tuple:
         return tup
-    
+
     if len(tup) == 1:
         return tup[0]
-    
+
     return tup
+
 
 def unwrap_or_error(tup: Tuple) -> Any:
     try:
@@ -179,8 +174,8 @@ def unwrap_or_error(tup: Tuple) -> Any:
 
     if type(tup) is not Tuple:
         raise ValueError(f"Failed to unwrap {tup} - not a tuple.")
-    
+
     if len(tup) != 1:
         raise ValueError(f"Tuple {tup} has more than one element.")
-    
+
     return tup[0]

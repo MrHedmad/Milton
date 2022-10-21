@@ -2,15 +2,15 @@
 
 This is heavily based on the discord python server bot.
 """
+import importlib.resources as pkg_resources
 import logging
 from pathlib import Path
-import importlib.resources as pkg_resources
 
 import yaml
 from box import Box
 
-from milton.utils.tools import recursive_update
 import milton
+from milton.utils.tools import recursive_update
 
 log = logging.getLogger(__name__)
 
