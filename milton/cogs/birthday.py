@@ -270,12 +270,15 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
 
         try:
             if year:
-                birth_from_str(f"{day:02}-{month:02}")
-            else:
                 birth_from_str(f"{day:02}-{month:02}-{year:04}")
+            else:
+                birth_from_str(f"{day:02}-{month:02}")
+
         except ValueError:
             log.debug("Inputted birthday is not parseable to a date.")
-            interaction.response.send_message("Oh, silly! That isn't a real day!")
+            await interaction.response.send_message(
+                "Oh, silly! That isn't a real day!", ephemeral=True
+            )
             return
 
         log.debug(f"Updating birthday of user {user_id} in guild {guild_id}")
