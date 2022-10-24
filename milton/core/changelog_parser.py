@@ -30,12 +30,7 @@ import re
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Iterable
-from typing import List
-from typing import Match
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import Iterable, List, Match, Optional, Tuple, Union
 
 from milton.utils.paginator import Paginator
 
@@ -310,7 +305,7 @@ class LineParser:
             A tuple containing the match type and the match itself.
         """
         for key, regex in self.regex.items():
-            if (match := regex.search(line)) :
+            if match := regex.search(line):
                 return key, match
 
 

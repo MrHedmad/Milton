@@ -1,23 +1,21 @@
 """Provide a cli for additional control"""
 import logging
 from inspect import cleandoc
-from typing import Coroutine
-from typing import Mapping
-from typing import Optional
+from typing import Coroutine, Mapping, Optional
 
 from aioconsole import ainput
 from discord.errors import HTTPException
 from discord.ext import commands
-from discord.ext import tasks
-from discord.ext.commands.errors import ExtensionAlreadyLoaded
-from discord.ext.commands.errors import ExtensionNotFound
-from discord.ext.commands.errors import ExtensionNotLoaded
-from discord.ext.commands.errors import NoEntryPointError
+from discord.ext.commands.errors import (
+    ExtensionAlreadyLoaded,
+    ExtensionNotFound,
+    ExtensionNotLoaded,
+    NoEntryPointError,
+)
 from tabulate import tabulate
 
 from milton.core.bot import Milton
-from milton.utils.tools import glob_word
-from milton.utils.tools import initialize_empty
+from milton.utils.tools import glob_word, initialize_empty
 
 log = logging.getLogger(__name__)
 
@@ -192,7 +190,7 @@ async def setup(bot):
             else:
                 print(f"Successfully reloaded extension {ext}")
         print("Finished reloading extensions")
-    
+
     @interface.add_option
     async def sync():
         """Sync all app commands with Discord"""

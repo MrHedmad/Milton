@@ -1,20 +1,14 @@
-import datetime as dt
+import importlib.resources as pkg_resources
 import logging
 import random
-from pathlib import Path
-import importlib.resources as pkg_resources
 
 import discord
+from discord import Interaction, app_commands
 from discord.ext import commands
-from discord import app_commands
-from discord import Interaction
 
 from milton.core.bot import Milton
-from milton.core.config import CONFIG
-from milton.core.errors import MiltonInputError
 from milton.utils.paginator import Paginator
 from milton.utils.tools import get_random_line
-
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +20,12 @@ class Toys(commands.Cog, name="Toys"):
         self.bot: Milton = bot
 
     @app_commands.command()
-    async def roll(self, interaction: Interaction, number: app_commands.Range[int, 1, 100], sides: app_commands.Range[int, 1, 50000]):
+    async def roll(
+        self,
+        interaction: Interaction,
+        number: app_commands.Range[int, 1, 100],
+        sides: app_commands.Range[int, 1, 50000],
+    ):
         """Roll some dice, like 1d20, or 100d1000!
 
         Accepts any combination of `<nr. dice>d<faces>`, up to 100 dice with
@@ -60,9 +59,7 @@ class Toys(commands.Cog, name="Toys"):
         Fact is guaranteed(tm) to be 99.8% accurate.
         """
         with pkg_resources.path("milton.resources", "facts.txt") as path:
-            embed = discord.Embed(
-                description=get_random_line(path)
-            )
+            embed = discord.Embed(description=get_random_line(path))
         await interaction.response.send_message(embed=embed)
 
 

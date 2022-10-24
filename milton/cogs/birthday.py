@@ -5,18 +5,15 @@ import logging
 from datetime import datetime
 from typing import Optional
 
+from discord import Interaction, app_commands
 from discord.ext import commands
-from discord import app_commands
-from discord import Interaction
 
 from milton.core.bot import Milton
 from milton.core.config import CONFIG
-from milton.core.database import milton_guilds
-from milton.core.database import MiltonGuild
-from milton.core.errors import MiltonInputError
 from milton.utils import tasks
-from milton.utils.paginator import Paginator
 from milton.utils.enums import Months
+from milton.utils.paginator import Paginator
+from milton.utils.tools import unwrap
 
 log = logging.getLogger(__name__)
 
@@ -49,7 +46,7 @@ def time_to_bday(date: Optional[str]) -> Optional[int]:
         Date: A parseable string to check.
     """
     now = datetime.now()
-    if (date := birth_from_str(date)) :
+    if date := birth_from_str(date):
         date = date.replace(year=now.year)
         diff = date - now
 
@@ -75,11 +72,7 @@ def is_today(this: dt.date, other: dt.date) -> bool:
 
 
 def clean_date(date: Optional[str]):
-    """This shouldn't have been necessary...
-
-    Fixes people entering non-0 padded dates.
-    Mostly done to appease Dragon's OCD.
-    """
+    """This shouldn't have been necessary..."""
     if not date:
         return date
 
@@ -109,11 +102,12 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         """Tasks the checking of the birthdays in a loop"""
         log.info("Checking today's birthdays...")
 
-        async for guild_id, document in milton_guilds():
-            async with document as guild:
-                shout_channel = guild["bday_shout_channel"]
-            if shout_channel:
-                await self.check_birthdays(guild_id)
+        async with self.bot.db.execute(
+            "SELECT guild_id, bday_shout_channel FROM guild_config"
+        ) as cursor:
+            async for row in cursor:
+                if row[1] is not None:
+                    await self.check_birthdays(row[0])
 
     @check_birthdays_task.before_loop
     async def before_task(self):
@@ -124,43 +118,51 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
 
         Takes a guild_id of a guild THAT HAS SET THE SHOUT CHANNEL!!
         """
-        async with MiltonGuild(guild_id) as guild:
-            shout_channel_id = guild["bday_shout_channel"]
+        async with self.bot.db.execute(
+            f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = :guild_id",
+            (guild_id,),
+        ) as cursor:
+            shout_channel_id = await cursor.fetchone()
+
+        shout_channel_id = unwrap(shout_channel_id)
 
         assert shout_channel_id is not None
 
         out = []
         today = dt.date.today()
 
-        async with MiltonGuild(str(guild_id)) as guild:
-            docs = [(x, y) for x, y in guild["birthdays"].items()]
+        async with self.bot.db.execute(
+            f"SELECT user_id, year, day, month FROM birthdays WHERE guild_id = :guild_id",
+            (guild_id,),
+        ) as cursor:
+            async for row in cursor:
+                user_id, year, day, month = row
 
-        for entry in docs:
-            user_id, date = entry
-
-            if not date:
-                continue
-
-            birthday = birth_from_str(date).date()
-
-            if not is_today(today, birthday):
-                continue
-
-            if birthday.year == 1:
-                # This is (probably) a date without a year.
-                out.append(f"Happy birthday to you, <@!{user_id}>!!")
-            else:
-                # This is a date with a year
-                age = today.year - birthday.year
-
-                if age == 0:
-                    ending = "You seem to have been born today. Congratulations!"
-                elif age < 0:
-                    ending = f"You must be a time traveler! You will be born in {-age} years!"
+                if year:
+                    date = f"{day:02}-{month:02}-{year:04}"
                 else:
-                    ending = f"You just turned {age}!!"
+                    date = f"{day:02}-{month:02}"
 
-                out.append(f"Happy birthday to you, <@!{user_id}>!! " + ending)
+                birthday = birth_from_str(date).date()
+
+                if not is_today(today, birthday):
+                    continue
+
+                if not year:
+                    # This is a date without a year.
+                    out.append(f"Happy birthday to you, <@!{user_id}>!!")
+                else:
+                    # This is a date with a year
+                    age = today.year - birthday.year
+
+                    if age == 0:
+                        ending = "You seem to have been born today. Congratulations!"
+                    elif age < 0:
+                        ending = f"You must be a time traveler! You will be born in {-age} years!"
+                    else:
+                        ending = f"You just turned {age}!!"
+
+                    out.append(f"Happy birthday to you, <@!{user_id}>!! " + ending)
 
         if len(out) != 0:
             shout_channel = self.bot.get_channel(int(shout_channel_id))
@@ -174,9 +176,11 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
                         " for this guild."
                     )
                 )
-
-                async with MiltonGuild(guild_id) as guild:
-                    guild["bday_shout_channel"] = None
+                await self.bot.db.execute(
+                    f"UPDATE guild_config SET bday_shout_channel = NULL WHERE guild_id = :guild_id",
+                    (guild_id,),
+                )
+                await self.bot.db.commit()
 
     @app_commands.command(name="show")
     async def get_birthdays(self, interaction: Interaction):
@@ -196,14 +200,27 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         guild_id = str(interaction.guild.id)
         guild = interaction.guild
 
-        async with MiltonGuild(guild_id) as milton_guild:
-            if not milton_guild["birthdays"]:
-                await interaction.response.send_message("Nobody registered a birthday in this server, sorry.")
-                return
-            docs = [(x, y) for x, y in milton_guild["birthdays"].items()]
-        docs = sorted(docs, key=lambda x: time_to_bday(x[1]))
+        birthdays = []
+        async with self.bot.db.execute(
+            f"SELECT user_id, year, day, month FROM birthdays WHERE guild_id = :guild_id",
+            (guild_id,),
+        ) as cursor:
+            async for row in cursor:
+                if row[1] is None:
+                    # This has no year
+                    birthdays.append((row[0], f"{row[2]:02}-{row[3]:02}"))
+                else:
+                    birthdays.append((row[0], f"{row[2]:02}-{row[3]:02}-{row[1]:04}"))
 
-        for entry in docs:
+        if not birthdays:
+            await interaction.response.send_message(
+                "Nobody registered a birthday in this server, sorry."
+            )
+            return
+
+        birthdays = sorted(birthdays, key=lambda x: time_to_bday(x[1]))
+
+        for entry in birthdays:
             user_id = int(entry[0])
             date = clean_date(entry[1])
 
@@ -227,63 +244,87 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         if do_paginate:
             await out.paginate(interaction)
         else:
-            await interaction.response.send_message("Nobody registered a birthday in this server, sorry.")
-
-    @app_commands.command(name = "set")
-    async def register(self, interaction: Interaction, month: Months, day: app_commands.Range[int, 1, 31], year: app_commands.Range[int, 1000, 9999]):
-        """Registers a new birthday for yourself."""
-        if not interaction.guild:
-            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
-
-        date = "{}-{}-{}".format(
-            str(day).zfill(2),
-            str(month.value).zfill(2),
-            year
-        )
-
-        ## This is a reuse of the old code. Mostly done to not change the
-        ## database backend, and to keep the checks used before.
-
-        try:
-            birth_from_str(date)
-        except ValueError:
-            raise MiltonInputError(
-                (
-                    "I cannot parse the date, sorry. Supported formats are DD-MM "
-                    "and DD-MM-YYYY. Remember that single digits **must** be padded!"
-                )
+            await interaction.response.send_message(
+                "Nobody registered a birthday in this server, sorry."
             )
 
-        # If we get to here, the datetime is parseable.
-        # I'm saving it as STR just because so I don't have to add a new type
-        # in the parser for the dictionary
+    @app_commands.command(name="set")
+    async def register(
+        self,
+        interaction: Interaction,
+        month: Months,
+        day: app_commands.Range[int, 1, 31],
+        year: app_commands.Range[int, 1000, 9999] = None,
+    ):
+        """Registers a new birthday for yourself."""
+        if not interaction.guild:
+            interaction.response.send_message(
+                "You must use this in a guild.", ephemeral=True
+            )
+            return
+
+        month = month.value
 
         guild_id = str(interaction.guild.id)
         user_id = str(interaction.user.id)
 
+        try:
+            if year:
+                birth_from_str(f"{day:02}-{month:02}-{year:04}")
+            else:
+                birth_from_str(f"{day:02}-{month:02}")
+
+        except ValueError:
+            log.debug("Inputted birthday is not parseable to a date.")
+            await interaction.response.send_message(
+                "Oh, silly! That isn't a real day!", ephemeral=True
+            )
+            return
+
         log.debug(f"Updating birthday of user {user_id} in guild {guild_id}")
 
-        async with MiltonGuild(guild_id) as guild:
-            guild["birthdays"].update({user_id: date})
+        await self.bot.db.execute(
+            ("DELETE FROM birthdays WHERE guild_id = :guild_id AND user_id = :user_id"),
+            (guild_id, user_id),
+        )
+        await self.bot.db.commit()
 
-        await interaction.response.send_message("Huzzah! I will now remember your birthday.")
+        await self.bot.db.execute(
+            (
+                "INSERT INTO birthdays "
+                "(guild_id, user_id, year, day, month) "
+                "VALUES (:guild_id, :user_id, :year, :day, :month) "
+            ),
+            (guild_id, user_id, year, day, month),
+        )
+        await self.bot.db.commit()
 
+        await interaction.response.send_message(
+            "Huzzah! I will now remember your birthday."
+        )
 
     @app_commands.command()
     async def remove(self, interaction):
         """Removes the birthday date from yourself."""
         if not interaction.guild:
-            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+            interaction.response.send_message(
+                "You must use this in a guild.", ephemeral=True
+            )
 
         guild_id = str(interaction.guild.id)
         user_id = str(interaction.user.id)
 
         log.debug(f"Removing birthday of user {user_id} in guild {guild_id}")
 
-        async with MiltonGuild(guild_id) as guild:
-            guild["birthdays"].update({user_id: None})
+        await self.bot.db.execute(
+            "DELETE FROM birthdays WHERE guild_id = :guild_id AND user_id = :user_id",
+            (guild_id, user_id),
+        )
+        await self.bot.db.commit()
 
-        await interaction.response.send_message("Sure! I forgot your birthday for this server. Bye!")
+        await interaction.response.send_message(
+            "Sure! I forgot your birthday for this server. Bye!"
+        )
 
     @app_commands.command()
     @app_commands.checks.has_permissions(administrator=True)
@@ -294,7 +335,9 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         Overwrites any previously set channel.
         """
         if not interaction.guild:
-            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+            interaction.response.send_message(
+                "You must use this in a guild.", ephemeral=True
+            )
 
         guild_id = str(interaction.guild.id)
         channel_id = str(interaction.channel.id)
@@ -303,12 +346,20 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
             f"Setting birthday shout channel for guild {guild_id} to {channel_id}"
         )
 
-        async with MiltonGuild(guild_id) as guild:
-            guild["bday_shout_channel"] = channel_id
+        await self.bot.db.execute(
+            (
+                "INSERT INTO guild_config "
+                "(guild_id, bday_shout_channel) "
+                "VALUES (:guild_id, :channel_id) "
+                "ON CONFLICT (guild_id) DO UPDATE SET bday_shout_channel = :channel_id WHERE guild_id = :guild_id"
+            ),
+            (guild_id, channel_id),
+        )
+        await self.bot.db.commit()
 
         await interaction.response.send_message(
             (
-                "I will shoutout the birthdays in this channel from now on!"
+                "I will shout out the birthdays in this channel from now on!"
                 " You can use `birthday silence` to make me shut up."
                 " (I will no longer shout in any previously set channels)"
             )
@@ -323,16 +374,26 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         Works in any channel, not necessarily that being screamed at.
         """
         if not interaction.guild:
-            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+            interaction.response.send_message(
+                "You must use this in a guild.", ephemeral=True
+            )
 
         guild_id = str(interaction.guild.id)
 
         log.debug(f"Removing birthday shout channel for guild {guild_id}")
 
-        async with MiltonGuild(guild_id) as guild:
-            guild["bday_shout_channel"] = None
+        await self.bot.db.execute(
+            (
+                "UPDATE OR IGNORE birthdays SET bday_shout_channel = NULL "
+                "WHERE guild_id = :guild_id"
+            ),
+            (guild_id,),
+        )
+        await self.bot.db.commit()
 
-        await interaction.response.send_message(("I will be silent about birthdays from now on."))
+        await interaction.response.send_message(
+            ("I will be silent about birthdays from now on.")
+        )
 
     @app_commands.command()
     @app_commands.checks.has_permissions(administrator=True)
@@ -342,18 +403,29 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
         Does not affect the normal check loop.
         """
         if not interaction.guild:
-            interaction.response.send_message("You must use this in a guild.", ephemeral=True)
+            interaction.response.send_message(
+                "You must use this in a guild.", ephemeral=True
+            )
 
         guild_id = str(interaction.guild.id)
 
-        async with MiltonGuild(guild_id) as guild:
-            shout_channel = guild["bday_shout_channel"]
+        async with self.bot.db.execute(
+            f"SELECT bday_shout_channel FROM guild_config WHERE guild_id = :guild_id",
+            (guild_id,),
+        ) as cursor:
+            shout_channel = await cursor.fetchone()
+
+        shout_channel = unwrap(shout_channel)
 
         if shout_channel is not None:
-            await interaction.response.send_message("Checking birthdays, please wait.", ephemeral=True)
+            await interaction.response.send_message(
+                "Checking birthdays, please wait.", ephemeral=True
+            )
             await self.check_birthdays(guild_id)
         else:
-            await interaction.response.send_message("Sorry, you did not set a shout channel.")
+            await interaction.response.send_message(
+                "Sorry, you did not set a shout channel.", ephemeral=True
+            )
 
 
 async def setup(bot):

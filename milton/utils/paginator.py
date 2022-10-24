@@ -4,8 +4,7 @@ from contextlib import suppress
 from typing import Optional
 
 import discord
-from discord import Interaction
-from discord import Message
+from discord import Interaction, Message
 from discord.ext import commands
 
 from milton.core.config import CONFIG
@@ -53,7 +52,7 @@ class Paginator(commands.Paginator):
         force_embed: bool = False,
         title: Optional[str] = None,
         url: Optional[str] = None,
-        colour: Optional[str] = None
+        colour: Optional[str] = None,
     ) -> None:
         # As this is used a lot, I expose the parent class arguments explicitly
         super().__init__(prefix, suffix, max_size)
@@ -96,7 +95,9 @@ class Paginator(commands.Paginator):
         pages = self.pages
         max_pages = len(pages)
 
-        embed = discord.Embed(description=pages[0], title=self.title, url=self.url, colour=self.colour)
+        embed = discord.Embed(
+            description=pages[0], title=self.title, url=self.url, colour=self.colour
+        )
         current_page = 0
 
         if max_pages <= 1 and self.force_embed is False:
@@ -108,7 +109,7 @@ class Paginator(commands.Paginator):
 
         # Add a handy descriptive footer
         embed.set_footer(text=f"Page {current_page + 1} / {max_pages}")
-    
+
         await interaction.response.send_message(embed=embed)
         message: Message = await interaction.original_response()
 
@@ -195,4 +196,3 @@ class Paginator(commands.Paginator):
         log.debug("Ending pagination and clearing reactions.")
         with suppress(discord.NotFound):
             await message.clear_reactions()
-

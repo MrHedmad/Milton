@@ -1,23 +1,20 @@
-import asyncio
 import logging
 import sys
 import time
-from contextlib import suppress
+from pathlib import Path
 from typing import Callable
 
 import aiohttp
+import aiosqlite
 import discord
 from box import Box
 from discord.abc import PrivateChannel
 from discord.ext import commands
-from discord.ext.commands.bot import when_mentioned
-from discord.ext.commands.bot import when_mentioned_or
+from discord.ext.commands.bot import when_mentioned, when_mentioned_or
 from discord.ext.commands.errors import ExtensionNotFound
 
 from milton import ROOT
-from milton.core.changelog_parser import Changelog
-from milton.core.changelog_parser import make_changelog
-from milton.core.changelog_parser import Version
+from milton.core.changelog_parser import Changelog, Version, make_changelog
 from milton.core.config import CONFIG
 
 log = logging.getLogger(__name__)
@@ -49,10 +46,7 @@ class Milton(commands.Bot):
     Attributes:
         started_on: The ISO timestamp when the bot instance was initiated.
         owner_id: The id snowflake for the owner of the bot.
-        DbClient: The client to use to call the MongoDB instance. This
-            shouldn't be used, in most cases.
-        DB: The database related to Milton as set in the configs.
-            This should be used to access collections inside the database.
+        db: The aiosqlite connection to the milton DB.
         http_session: An aiohttp session that can be used to make HTTP requests.
         changelog: The changelog object of the bot.
         version: The version of the bot.
@@ -71,11 +65,7 @@ class Milton(commands.Bot):
         self.changelog: Changelog = make_changelog(path)
         self.version: Version = self.changelog.latest_version
 
-    async def on_ready(self):
-        logon_str = f"Logged in as {self.user}"
-        print(logon_str)
-        log.info(logon_str)
-
+    async def setup_hook(self):
         # Add AIOHTTP session
         self.http_session = aiohttp.ClientSession()
 
@@ -83,7 +73,6 @@ class Milton(commands.Bot):
         log.debug("Loading default extensions")
 
         essentials = ["cli", "error_handler", "debug"]
-
 
         # Essential extensions
         for cog in essentials:
@@ -99,8 +88,53 @@ class Milton(commands.Bot):
             except ExtensionNotFound as e:
                 log.exception(e)
                 continue
-        
+
         await self.tree.sync()
+
+        db_path = Path(CONFIG.database.path).expanduser().absolute()
+        initialize_db = not db_path.exists()
+
+        self.db: aiosqlite.Connection = await aiosqlite.connect(db_path)
+
+        await self.migrate(initialize_db)
+
+    async def on_ready(self):
+        log.info(f"Logged in as {self.user}. Ready.")
+
+    async def migrate(self, initialize=False):
+        migrations = list((ROOT / "schemas").iterdir())
+        migrations.remove([x for x in migrations if x.name == "__init__.py"][0])
+        migrations.sort(key=lambda x: x.stem)
+
+        if initialize:
+            log.info("Initializing new empty DB.")
+            initial_script = [x for x in migrations if x.name == "0.sql"][0]
+
+            await self.db.executescript(initial_script.read_text())
+            log.info("DB initialized.")
+
+        async with self.db.execute("SELECT version FROM version") as cursor:
+            db_version = await cursor.fetchone()
+            db_version = db_version[0]
+
+        latest_version = int(migrations[-1].stem)
+        if db_version == latest_version:
+            log.info("No migrations to apply.")
+            return
+        elif db_version > latest_version:
+            log.info(
+                f"The DB is in the future! db: {db_version}, migration: {latest_version}"
+            )
+
+        log.info("Found migrations to apply.")
+        to_apply = migrations[(db_version + 1) :]
+        log.info(f"Applying {len(to_apply)} migration(s).")
+        for migration in to_apply:
+            log.debug(f"Applying migration {migration}...")
+            await self.db.executescript(migration.read_text())
+            await self.db.commit()
+
+        log.info("Done migrating database to new schema.")
 
     async def add_cog(self, cog: commands.Cog):
         await super().add_cog(cog)
@@ -127,7 +161,10 @@ class Milton(commands.Bot):
         if self.http_session:
             log.info("Closing AIOHTTP session...")
             await self.http_session.close()
-        
+
+        log.info("Closing database connection...")
+        await self.db.close()
+
         log.info("Closing bot loop...")
         await super().close()
 

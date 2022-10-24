@@ -1,16 +1,14 @@
 import datetime
+import importlib.resources as pkg_resources
 import platform
 import sys
 import time
 from importlib.metadata import version
-import importlib.resources as pkg_resources
 
 import discord
+from discord import Interaction, app_commands
 from discord.errors import Forbidden
-from discord import app_commands
-from discord import Interaction
 from discord.ext import commands
-from discord.ext.commands.context import Context
 
 from milton.core.bot import Milton
 from milton.core.errors import MiltonInputError
@@ -95,7 +93,7 @@ class MetaCog(commands.Cog, name="Meta"):
     @app_commands.guilds(discord.Object(id=311200788858798080))
     async def subscribe(self, interaction: Interaction):
         """Subscribe to announcements and other things."""
-        if (role := interaction.guild.get_role(777612764222717992)) :
+        if role := interaction.guild.get_role(777612764222717992):
             if role not in interaction.message.author.roles:
                 try:
                     await interaction.message.author.add_roles(role)
