@@ -10,6 +10,11 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [1.0.1] - 2022-11-07
+### Fixed
+- Fixed a bug that prevented some PDFs from rendering properly.
+
+
 ## [1.0.0-beta] - 2022-10-20
 ### Changed
 - Moved from MongoDB to SQLite. It should be faster, safer, and easier to set up.
