@@ -67,9 +67,7 @@ class PDFRenderCog(commands.Cog, name="PDF renderer"):
             file_len = file_metadata.getNumPages()
 
             if info.title:
-                embed.add_field(
-                    name="Title", value=info.title.encode("ascii").decode("UTF-8")
-                )
+                embed.add_field(name="Title", value=info.title)
 
             if info.author:
                 embed.add_field(name="Author(s)", value=info.author)
