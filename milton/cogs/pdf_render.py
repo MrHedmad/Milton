@@ -22,6 +22,9 @@ class PDFRenderCog(commands.Cog, name="PDF renderer"):
     async def on_message(self, message: discord.Message):
         loop = get_running_loop()
 
+        if message.author.bot:
+            return
+
         if message.attachments is None:
             return
 

@@ -50,3 +50,9 @@ emojis:
 birthday:
   # Time (in UTC hours) when to check for birthdays.
   when: 10
+
+announcements:
+  # Email account to send emails as
+  email: null
+  # App-specific passwords for the mail account (used to login)
+  app_password: null

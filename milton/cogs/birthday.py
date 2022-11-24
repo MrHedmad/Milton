@@ -87,6 +87,7 @@ def clean_date(date: Optional[str]):
         return "-".join(output)
 
 
+@app_commands.guild_only
 class BirthdayCog(commands.GroupCog, name="birthday"):
     """Cog for implementing the birthday commands and notifications"""
 
