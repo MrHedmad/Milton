@@ -28,7 +28,7 @@ logs:
   # Levels can be 50 - CRITICAL, 40 - ERROR, 30 - WARNING, 20 - INFO,
   # 10 - DEBUG or some other int. Log messages of level equal or above the
   # specified will be logged.
-  file_level: 20
+  file_level: 10
   stdout_level: 30
 
 # >> Set the bot command prefixes.

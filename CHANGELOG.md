@@ -10,6 +10,14 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [Unreleased]
+### Added
+- Added a `--gen_config` command line option when starting the bot to make an empty config file.
+
+### Changed
+- Changed default file level logging to DEBUG (was INFO).
+
+
 ## [1.0.1] - 2022-11-07
 ### Fixed
 - Fixed a bug that prevented some PDFs from rendering properly.
