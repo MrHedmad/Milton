@@ -1,9 +1,14 @@
 import logging
+import re
+from email.message import EmailMessage
 
-from discord import Interaction, Member, Role, app_commands, ui
+import aiosmtplib
+from aiosqlite import IntegrityError
+from discord import Embed, Interaction, Member, Role, app_commands, ui
 from discord.ext.commands import GroupCog
 
 from milton.core.bot import Milton
+from milton.core.config import CONFIG
 from milton.core.errors import MiltonError
 
 log = logging.getLogger(__name__)
@@ -12,13 +17,34 @@ log = logging.getLogger(__name__)
 class NotSubscribedError(MiltonError):
     """The user is not subscribed to the announcements"""
 
+    pass
+
 
 class RoleDoesNotExistError(MiltonError):
     """The role does not exist anymore"""
 
+    pass
+
+
+class RoleAlreadyAnnouncerError(MiltonError):
+    pass
+
 
 class RoleNotAllowedError(MiltonError):
     """The role mentioned is not allowed to send announcements."""
+
+    pass
+
+
+class InvalidEmailError(MiltonError):
+    """Raised when an email is not valid"""
+
+    pass
+
+
+EMAIL_VALIDATION = re.compile(
+    r"""(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"""
+)
 
 
 class AnnouncementModal(ui.Modal, title="New Announcement"):
@@ -29,7 +55,9 @@ class AnnouncementModal(ui.Modal, title="New Announcement"):
 
     async def on_submit(self, interaction: Interaction, /) -> None:
         await interaction.response.send_message("Got it! Will announce soon!")
-        await _send_announcement(interaction.client, announcement=self)
+        await _send_announcement(
+            interaction.client, interaction=interaction, announcement=self
+        )
 
     async def on_error(self, interaction: Interaction, error: Exception, /) -> None:
         return await super().on_error(interaction, error)
@@ -37,33 +65,180 @@ class AnnouncementModal(ui.Modal, title="New Announcement"):
 
 async def _unsubscribe(bot: Milton, member_id: int, guild_id: int):
     """Call the DB to unsubscribe a certain member from announcements"""
-    pass
+    await bot.db.execute(
+        (
+            "DELETE FROM announcement_user_data WHERE guild_id = :guild_id AND user_id = :member_id",
+            (guild_id, member_id),
+        )
+    )
+    await bot.db.commit()
 
 
 async def _subscribe(bot: Milton, member_id: int, guild_id: int, email: str):
     """Call the DB to subscribe a certain member from announcements"""
-    pass
+    match = EMAIL_VALIDATION.match(email)
+    if not match:
+        raise InvalidEmailError(f"Invalid email: {email}")
+
+    email = match.group(1)
+
+    await bot.db.execute(
+        (
+            "DELETE FROM announcement_user_data WHERE "
+            "guild_id = :guild_id AND user_id = :member_id",
+            (guild_id, member_id),
+        )
+    )
+    await bot.db.execute(
+        (
+            "INSERT INTO announcement_user_data "
+            "(user_id, guild_id, user_email) "
+            "VALUES (:member_id, :guild_id, :email)",
+            (member_id, guild_id, email),
+        )
+    )
+    await bot.db.commit()
 
 
 async def _add_announce_role(bot: Milton, role_id: int, guild_id: int):
-    pass
+    try:
+        await bot.db.execute(
+            (
+                "INSERT INTO announcement_roles "
+                "(guild_id, role) "
+                "VALUES (:guild_id, :role_id)",
+                (guild_id, role_id),
+            )
+        )
+        await bot.db.execute()
+    except IntegrityError:
+        # The role already exists, we violated the "UNIQUE" constraint on 'role'
+        raise RoleAlreadyAnnouncerError()
 
 
 async def _remove_announce_role(bot: Milton, role: int, guild_id: int):
-    pass
+    await bot.db.execute(
+        (
+            "DELETE FROM announcement_roles WHERE "
+            "guild_id = :guild_id AND role = :role",
+            (guild_id, role),
+        )
+    )
+    await bot.db.commit()
 
 
-async def _send_announcement(bot: Milton, announcement: AnnouncementModal):
+async def _send_announcement(
+    bot: Milton, interaction: Interaction, announcement: AnnouncementModal
+):
     """Send an announcement."""
-    pass
+    # This function does not check if the sender is authorized to send the announcement.
+    # It also does NOT check if the guild has an announcement channel set.
+    # It will probably fail horribly if called out-of-context
+    guild_id = interaction.guild_id
+    # 1. Generate an embed
+    announcement_embed = Embed(
+        title=announcement.announcement_title.value,
+        description=announcement.announcement_body.value,
+    ).set_author(
+        name=interaction.user.display_name, icon_url=interaction.user.display_icon
+    )
+    # 2. Send the embed to the announcement channel for the guild
+    async with bot.db.execute(
+        (
+            "SELECT announcement_channel FROM announcement_guild_config WHERE "
+            "guild_id = :guild_id",
+            (guild_id,),
+        )
+    ) as cursor:
+        announcement_channel_id = await cursor.fetchone()
+
+    assert (
+        announcement_channel_id is not None
+    ), "Failed to fetch target announcement channel"
+    announcement_channel = await bot.fetch_channel(announcement_channel_id)
+    await announcement_channel.send(embed=announcement_embed)
+
+    if CONFIG.announcements.email is None or CONFIG.announcements.password is None:
+        log.error(
+            "ERROR: Cannot send emails without a password/email combo. Skipping send."
+        )
+        await interaction.response.edit_message(
+            (
+                "I sent the message on Discord, but I could not send emails. "
+                "Contact your local administrator!"
+            )
+        )
+        return
+
+    # 3. Generate an email
+    async with bot.db.execute(
+        (
+            "SELECT user_email FROM announcement_user_data WHERE "
+            "guild_id = :guild_id",
+            (guild_id,),
+        )
+    ) as cursor:
+        recipients = await cursor.fetchall()
+
+    if not recipients:
+        await interaction.response.edit_message(
+            ("I sent the message on Discord, but there is no-one to send emails to!")
+        )
+        return
+
+    recipients = ", ".join(recipients)
+
+    mail = EmailMessage()
+    mail["From"] = CONFIG.announcements.email
+    mail["To"] = recipients
+    mail["Subject"] = announcement.announcement_title.value
+    mail.set_content(
+        (
+            f"Announcement from {interaction.user.display_name} in server {interaction.guild.name}:\n\n"
+            + announcement.announcement_body.value
+            + "\n\n"
+        )
+    )
+    # 4. Connect to the email server and send the email
+    await aiosmtplib.send(
+        message=mail,
+        sender=CONFIG.announcements.email,
+        hostname=CONFIG.announcements.hostname,
+        port=CONFIG.announcements.port,
+    )
+    # 5. Update the interaction to say that everything went smoothly.
+    await interaction.response.edit_message("Announcement complete!")
 
 
-async def _send_admin_status(bot: Milton, interaction: Interaction):
-    pass
+async def _set_announcement_channel(bot: Milton, interaction: Interaction):
+    guild_id = interaction.guild_id
+    channel_id = interaction.channel_id
+    await bot.db.execute(
+        (
+            "DELETE FROM announcement_guild_config WHERE " "guild_id = :guild_id",
+            (guild_id,),
+        )
+    )
+    await bot.db.execute(
+        (
+            "INSERT INTO announcement_guild_config "
+            "(guild_id, announcement_channel) "
+            "VALUES (:guild_id, :channel_id)",
+            (guild_id, channel_id),
+        )
+    )
+    await bot.db.commit()
 
 
-async def _send_user_status(bot: Milton, interaction: Interaction):
-    pass
+async def _unset_announcement_channel(bot: Milton, interaction: Interaction):
+    guild_id = interaction.guild_id
+    await bot.db.execute(
+        (
+            "DELETE FROM announcement_guild_config WHERE " "guild_id = :guild_id",
+            (guild_id,),
+        )
+    )
+    await bot.db.commit()
 
 
 @app_commands.guild_only
@@ -74,12 +249,18 @@ class AnnouncementsCog(GroupCog, name="announcement"):
     @app_commands.command(name="subscribe")
     async def subscribe(self, interaction: Interaction, email: str):
         """Subscribe (or change your email) to the email announcements for this guild."""
-        await _subscribe(
-            bot=self.bot,
-            member_id=interaction.user.id,
-            guild_id=interaction.guild_id,
-            email=email,
-        )
+        try:
+            await _subscribe(
+                bot=self.bot,
+                member_id=interaction.user.id,
+                guild_id=interaction.guild_id,
+                email=email,
+            )
+        except InvalidEmailError:
+            await interaction.response.send_message(
+                "Sorry, the email you used does not seem to be valid."
+            )
+            return
 
         await interaction.response.send_message(
             "You have subscribed to the announcements. Congrats!"
@@ -110,12 +291,18 @@ class AnnouncementsCog(GroupCog, name="announcement"):
         self, interaction: Interaction, member: Member, email: str
     ):
         """Force someone to subscribe to the announcements for this guild."""
-        await _subscribe(
-            bot=self.bot,
-            member_id=member.id,
-            guild_id=interaction.guild_id,
-            email=email,
-        )
+        try:
+            await _subscribe(
+                bot=self.bot,
+                member_id=member.id,
+                guild_id=interaction.guild_id,
+                email=email,
+            )
+        except InvalidEmailError:
+            await interaction.response.send_message(
+                "Sorry, the email you used does not seem to be valid."
+            )
+            return
 
         await interaction.response.send_message(
             f"You've forced {member.mention} to subscribe to the email announcements with email {email}."
@@ -169,9 +356,15 @@ class AnnouncementsCog(GroupCog, name="announcement"):
     @app_commands.checks.has_permissions(administrator=True)
     async def add_announce_role(self, interaction: Interaction, role: Role):
         """Add a role that can send announcements."""
-        await _add_announce_role(
-            self.bot, role_id=role.id, guild_id=interaction.guild_id
-        )
+        try:
+            await _add_announce_role(
+                self.bot, role_id=role.id, guild_id=interaction.guild_id
+            )
+        except RoleAlreadyAnnouncerError:
+            await interaction.response.send_message(
+                f"{role.mention} is already an announcer role!"
+            )
+            return
 
         await interaction.response.send_message(
             f"Added {role.mention} as an announcer role!"
@@ -198,11 +391,27 @@ class AnnouncementsCog(GroupCog, name="announcement"):
     @app_commands.command(name="info")
     async def announcement_info(self, interaction: Interaction):
         """Print some information regarding announcements."""
-        if interaction.user.resolved_permissions.administrator:
-            await _send_admin_status(self.bot, interaction)
+        guild_id = interaction.guild_id
+        user_id = interaction.user.id
+
+        async with self.bot.db.execute(
+            (
+                "SELECT user_email FROM announcement_user_data "
+                "WHERE guild_id = :guild_id AND user_id = :user_id",
+                (guild_id, user_id),
+            )
+        ) as cursor:
+            email = await cursor.fetchone()
+
+        if email is None:
+            await interaction.response.send_message(
+                "You are not receiving announcements for this guild."
+            )
             return
 
-        await _send_user_status(self.bot, interaction)
+        await interaction.response.send_message(
+            f"You are registered for announcements with email `{email}`."
+        )
 
     @app_commands.command(name="send")
     async def send_announcement(self, interaction: Interaction):
@@ -219,7 +428,7 @@ class AnnouncementsCog(GroupCog, name="announcement"):
 
         if not guild_supports_announcements:
             await interaction.response.send_message(
-                "Sorry! You can announce, but nobody told me where to announce...",
+                "Sorry! This server does not support announcements.",
                 ephemeral=True,
             )
 
@@ -230,4 +439,16 @@ class AnnouncementsCog(GroupCog, name="announcement"):
     @app_commands.checks.has_permissions(administrator=True)
     async def set_announcement_channel(self, interaction: Interaction):
         """Set this channel as the announcement channel."""
-        pass
+        ## TODO: What if we cannot write in this channel?
+        # With admin permissions this is not a problem, but meh?
+        await _set_announcement_channel(self.bot, interaction)
+        await interaction.response.send_message("I will announce here from now on.")
+
+    @app_commands.command(name="silence")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def stop_announcements(self, interaction: Interaction):
+        """Stop announcing for this guild."""
+        await _unset_announcement_channel(self.bot, interaction)
+        await interaction.response.send_message(
+            "I will stop announcing for this guild."
+        )

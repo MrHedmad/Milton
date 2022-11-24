@@ -1,17 +1,17 @@
 CREATE TABLE announcement_user_data (
-    user_id PRIMARY KEY,
-    guild_id NOT NULL,
+    user_id NOT NULL,
+    guild_id NOT NULL UNIQUE,
     user_email NOT NULL
 );
 
 CREATE TABLE announcement_guild_config (
     guild_id PRIMARY KEY,
-    announcement_channel INT NOT NULL
+    announcement_channel INT UNIQUE NOT NULL
 );
 
 CREATE TABLE announcement_roles (
-    guild_id PRIMARY KEY,
-    role INT NOT NULL
+    guild_id INT NOT NULL,
+    role INT NOT NULL UNIQUE
 );
 
-UPDATE version SET version = 1 WHERE Id = 0;
+UPDATE version SET version = 1;
