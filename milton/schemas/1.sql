@@ -1,6 +1,6 @@
 CREATE TABLE announcement_user_data (
-    user_id NOT NULL,
-    guild_id NOT NULL UNIQUE,
+    user_id NOT NULL UNIQUE,
+    guild_id NOT NULL,
     user_email NOT NULL
 );
 
