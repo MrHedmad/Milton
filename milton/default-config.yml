@@ -1,9 +1,3 @@
-# DEFAULT OPTION FILE FOR MILTON - !! DO NOT MODIFY THIS DIRECTLY !!
-# Create an options.yml in the top-level folder (e.g. `./Milton/`)
-# and override options in that file instead.
-
-# All paths can be given relative to the top-level folder (i.e. `./Milton/`).
-
 # Options related to the bot.
 bot:
   # >> Token for logging in. The bot will not start if set to null.
