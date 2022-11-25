@@ -1,3 +1,4 @@
+import datetime
 import logging
 import re
 from email.message import EmailMessage
@@ -164,11 +165,17 @@ async def _send_announcement(
     # It will probably fail horribly if called out-of-context
     guild_id = interaction.guild_id
     # 1. Generate an embed
-    announcement_embed = Embed(
-        title=announcement.announcement_title.value,
-        description=announcement.announcement_body.value,
-    ).set_author(
-        name=interaction.user.display_name, icon_url=interaction.user.display_icon
+    announcement_embed = (
+        Embed(
+            title=announcement.announcement_title.value,
+            description=announcement.announcement_body.value,
+            timestamp=datetime.datetime.utcnow(),
+            color=discord.Color.og_blurple(),
+        )
+        .set_author(
+            name=interaction.user.display_name, icon_url=interaction.user.avatar.url
+        )
+        .set_footer(text="Milton Announcements service")
     )
     # 2. Send the embed to the announcement channel for the guild
     async with bot.db.execute(
