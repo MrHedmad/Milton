@@ -279,6 +279,22 @@ class AnnouncementsCog(GroupCog, name="announcement"):
     def __init__(self, bot: Milton) -> None:
         self.bot: Milton = bot
 
+    async def cog_app_command_error(
+        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+    ) -> None:
+        if isinstance(error, app_commands.MissingPermissions):
+            try:
+                interaction.response.send_message(
+                    "I'm sorry, you don't have permission to do this."
+                )
+            except discord.InteractionResponded:
+                interaction.followup.send(
+                    "I'm sorry, but you don't have permission to do this."
+                )
+            return
+
+        raise error
+
     @app_commands.command(name="subscribe")
     async def subscribe(self, interaction: Interaction, email: str):
         """Subscribe (or change your email) to the email announcements for this guild."""
