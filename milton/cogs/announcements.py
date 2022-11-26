@@ -197,7 +197,7 @@ async def _send_announcement(
         log.error(
             "ERROR: Cannot send emails without a password/email combo. Skipping send."
         )
-        await interaction.response.edit_message(
+        await interaction.followup.send(
             content=(
                 "I sent the message on Discord, but I could not send emails. "
                 "Contact your local administrator!"
@@ -213,7 +213,7 @@ async def _send_announcement(
         recipients = await cursor.fetchall()
 
     if not recipients:
-        await interaction.response.edit_message(
+        await interaction.followup.send(
             content="I sent the message on Discord, but there is no-one to send emails to!"
         )
         return

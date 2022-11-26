@@ -1,5 +1,5 @@
 CREATE TABLE announcement_user_data (
-    user_id NOT NULL UNIQUE,
+    user_id NOT NULL,
     guild_id NOT NULL,
     user_email NOT NULL
 );
@@ -11,7 +11,7 @@ CREATE TABLE announcement_guild_config (
 
 CREATE TABLE announcement_roles (
     guild_id INT NOT NULL,
-    role INT NOT NULL UNIQUE
+    role INT NOT NULL
 );
 
 UPDATE version SET version = 1;
