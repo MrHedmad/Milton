@@ -10,6 +10,11 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+## [1.0.1-beta] - 2023-01-18
+### Added
+- Added a math rendering function. Simply type a math expression between `$$`s, and click on the eye reaction that Milton sends if it detects any math it can render.
+
+
 ## [1.0.1] - 2022-11-07
 ### Fixed
 - Fixed a bug that prevented some PDFs from rendering properly.
