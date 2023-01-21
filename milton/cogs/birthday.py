@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
+import discord
 from discord import Interaction, app_commands
 from discord.ext import commands
 
@@ -87,8 +88,25 @@ def clean_date(date: Optional[str]):
         return "-".join(output)
 
 
+@app_commands.guild_only
 class BirthdayCog(commands.GroupCog, name="birthday"):
     """Cog for implementing the birthday commands and notifications"""
+
+    async def cog_app_command_error(
+        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+    ) -> None:
+        if isinstance(error, app_commands.MissingPermissions):
+            try:
+                interaction.response.send_message(
+                    "I'm sorry, you don't have permission to do this."
+                )
+            except discord.InteractionResponded:
+                interaction.followup.send(
+                    "I'm sorry, but you don't have permission to do this."
+                )
+            return
+
+        raise error
 
     def __init__(self, bot: Milton) -> None:
         self.bot: Milton = bot

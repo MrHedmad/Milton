@@ -1,9 +1,3 @@
-# DEFAULT OPTION FILE FOR MILTON - !! DO NOT MODIFY THIS DIRECTLY !!
-# Create an options.yml in the top-level folder (e.g. `./Milton/`)
-# and override options in that file instead.
-
-# All paths can be given relative to the top-level folder (i.e. `./Milton/`).
-
 # Options related to the bot.
 bot:
   # >> Token for logging in. The bot will not start if set to null.
@@ -34,7 +28,7 @@ logs:
   # Levels can be 50 - CRITICAL, 40 - ERROR, 30 - WARNING, 20 - INFO,
   # 10 - DEBUG or some other int. Log messages of level equal or above the
   # specified will be logged.
-  file_level: 20
+  file_level: 10
   stdout_level: 30
 
 # >> Set the bot command prefixes.
@@ -56,3 +50,9 @@ emojis:
 birthday:
   # Time (in UTC hours) when to check for birthdays.
   when: 10
+
+announcements:
+  # Email account to send emails as
+  email: null
+  # App-specific passwords for the mail account (used to login)
+  app_password: null

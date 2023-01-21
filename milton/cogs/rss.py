@@ -34,6 +34,7 @@ async def get_last_xkcd(session):
     return embed
 
 
+@app_commands.guild_only
 class RSSCog(commands.GroupCog, name="xkcd"):
     def __init__(self, bot) -> None:
         self.bot: Milton = bot

@@ -1,4 +1,7 @@
+import importlib.resources as pkg_resources
 import logging
+import os
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -215,3 +218,37 @@ def run_bot():
 
     # Run the client
     milton.run()
+
+
+def main():
+    """Run Milton, with extra command line args."""
+    from argparse import ArgumentParser
+
+    log = logging.getLogger(__name__)
+    parser = ArgumentParser()
+
+    parser.add_argument(
+        "--gen_config",
+        help="Generate a config in ~/.milton/config.yml for manual editing.",
+        action="store_true",
+    )
+
+    args = parser.parse_args()
+
+    if args.gen_config:
+        target = Path("~/.milton/config.yml").expanduser()
+
+        if target.exists():
+            log.error(
+                f"A config file already exists ({target}). Refusing to overwrite."
+            )
+            sys.exit(1)
+
+        if not target.parent.exists():
+            os.mkdir(target)
+
+        shutil.copyfile(pkg_resources.path("milton", "default-config.yml"), target)
+        print(f"Created an empty config file @{target}!")
+        sys.exit()
+
+    run_bot()

@@ -10,6 +10,16 @@ The Patch version is increased for any other change.
 
 The `beta` tag is added when the bot has not been in production for long. Can be removed without increasing any patch number.
 
+
+## [1.1.0-beta] - 2023-01-21
+### Added
+- Added a `--gen_config` command line option when starting the bot to make an empty config file.
+- Added the `announcements` cog to handle e-mail announcements. This cog is **not** loaded by default.
+
+### Changed
+- Changed default file level logging to DEBUG (was INFO).
+
+
 ## [1.0.1-beta] - 2023-01-18
 ### Added
 - Added a math rendering function. Simply type a math expression between `$$`s, and click on the eye reaction that Milton sends if it detects any math it can render.

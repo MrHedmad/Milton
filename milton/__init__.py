@@ -17,9 +17,9 @@ log.propagate = False
 
 formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
-_LOG_PATH = CONFIG.logs.path
+_LOG_PATH = Path(CONFIG.logs.path).expanduser().resolve()
 
-if Path(_LOG_PATH).parent.exists() is False:
+if _LOG_PATH.parent.exists() is False:
     os.makedirs(Path(_LOG_PATH).parent)
 
 file_h = RotatingFileHandler(
