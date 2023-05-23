@@ -3,11 +3,15 @@ import os
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from importlib import resources
 
 from milton.core.config import CONFIG
+from milton.core.changelog_parser import make_changelog
+import milton
 
-# Save the path to here
-ROOT = Path(__file__).parent
+__all__ = ["__version__", "CHANGELOG"]
+
+__version__ = "1.1.0-beta"
 
 # Setup logging
 log = logging.getLogger("milton")  # Keep this at the module level name
