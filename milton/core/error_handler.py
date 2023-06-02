@@ -88,7 +88,12 @@ class Errors(commands.Cog, name="errors"):
                 content=f"🕳️ Member `{str(d_error).split(' ')[1]}` not found ! Don't hesitate to ping the requested member."
             )
         # UserInputError -> BadUnionArgument | BadLiteralArgument | ArgumentParsingError
-        except commands.BadArgument or commands.BadUnionArgument or commands.BadLiteralArgument or commands.ArgumentParsingError as d_error:
+        except (
+            commands.BadArgument
+            or commands.BadUnionArgument
+            or commands.BadLiteralArgument
+            or commands.ArgumentParsingError
+        ) as d_error:
             await edit(content=f"🕳️ {d_error}")
         # CommandNotFound
         except commands.CommandNotFound as d_error:
@@ -111,7 +116,13 @@ class Errors(commands.Cog, name="errors"):
                 await edit(
                     content=f"🕳️ The bot require the following permissions: `{'` `'.join(d_error.missing_permissions)}`."
                 )
-        except commands.CheckAnyFailure or commands.MissingRole or commands.BotMissingRole or commands.MissingAnyRole or commands.BotMissingAnyRole as d_error:
+        except (
+            commands.CheckAnyFailure
+            or commands.MissingRole
+            or commands.BotMissingRole
+            or commands.MissingAnyRole
+            or commands.BotMissingAnyRole
+        ) as d_error:
             await edit(content=f"🕳️ {d_error}")
         except commands.NSFWChannelRequired:
             await edit(content="🕳️ This command require an NSFW channel.")

@@ -1,11 +1,9 @@
 import logging
-import os
-import shutil
 import sys
 import time
+from importlib import resources
 from pathlib import Path
 from typing import Callable, Optional
-from importlib import resources
 
 import aiohttp
 import aiosqlite
@@ -16,9 +14,9 @@ from discord.ext import commands
 from discord.ext.commands.bot import when_mentioned, when_mentioned_or
 from discord.ext.commands.errors import ExtensionNotFound
 
-from milton.core.changelog_parser import Changelog, Version, make_changelog
-from milton.core.config import CONFIG
 import milton
+from milton.core.changelog_parser import Changelog, make_changelog
+from milton.core.config import CONFIG
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +65,9 @@ class Milton(commands.Bot):
         """Discord's numerical ID of the owner of the bot"""
         self.http_session: Optional[aiohttp.ClientSession] = None
         """An aiohttp.ClientSession or None if it has not been initialized yet."""
-        self.changelog: Changelog = make_changelog(self.path_to_myself.parent / "CHANGELOG.md")
+        self.changelog: Changelog = make_changelog(
+            self.path_to_myself.parent / "CHANGELOG.md"
+        )
         """The bot's changelog object"""
         self.version: str = milton.__version__
         """The bot's version string"""
@@ -84,7 +84,7 @@ class Milton(commands.Bot):
         # Essential extensions
         for cog in essentials:
             try:
-                await self.load_extension(f"milton.core.cogs.{cog}")
+                await self.load_extension(f"milton.core.{cog}")
             except ExtensionNotFound as e:
                 log.exception(e)
                 continue
@@ -95,7 +95,7 @@ class Milton(commands.Bot):
             except ExtensionNotFound as e:
                 log.exception(e)
                 continue
-        
+
         # Send the slash commands to discord for syncing.
         # This should not be called too many times but it's good here.
         await self.tree.sync()
@@ -113,7 +113,7 @@ class Milton(commands.Bot):
 
     async def migrate(self, initialize=False):
         """Apply migrations to the database from one version to another
-        
+
         The bot's database needs a way to be migrated between versions.
         This is it - migrations in the schemas folder are applied to the
         database, in order, to get from some old version to the latest.
@@ -136,7 +136,10 @@ class Milton(commands.Bot):
             initial_script = migrations[0]
 
             await self.db.executescript(initial_script.read_text())
-            await self.db.execute("UPDATE version SET version = :version", {"version": int(migrations[0].stem)})
+            await self.db.execute(
+                "UPDATE version SET version = :version",
+                {"version": int(migrations[0].stem)},
+            )
             log.info("DB initialized.")
 
         async with self.db.execute("SELECT version FROM version") as cursor:
@@ -158,7 +161,10 @@ class Milton(commands.Bot):
         for migration in to_apply:
             log.debug(f"Applying migration {migration}...")
             await self.db.executescript(migration.read_text())
-            await self.db.execute("UPDATE version SET version = :version", {"version": int(migration.stem)})
+            await self.db.execute(
+                "UPDATE version SET version = :version",
+                {"version": int(migration.stem)},
+            )
             await self.db.commit()
 
         log.info("Done migrating database to new schema.")
@@ -247,7 +253,7 @@ def run_bot():
 
 def main():
     """Run Milton!
-    
+
     This is here if we ever need to add CLI args to milton.
     """
 
