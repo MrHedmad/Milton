@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Cog
 from pdf2image import convert_from_bytes
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from milton.core.bot import Milton
 

@@ -125,21 +125,24 @@ class Milton(commands.Bot):
 
         See the README.md file in the `schemas` folder for more information.
         """
-        with (self.path_to_myself / "schemas" / "migrations.txt").open("r") as stream:
-            migrations = stream.readlines()
-        # Filter out empty lines
-        migrations = [x.strip() for x in migrations if len(x.strip()) > 0]
+        migrations = list((self.path_to_myself / "schemas").iterdir())
+        migrations.remove([x for x in migrations if x.name == "__init__.py"][0])
+        # Remove non-sql files
+        migrations = [x for x in migrations if x.suffix == ".sql"]
+        migrations.sort(key=lambda x: x.stem)
 
         if initialize:
             log.info("Initializing new empty DB.")
-            await self.db.executescript(migrations[0])
+            initial_script = migrations[0]
+
+            await self.db.executescript(initial_script.read_text())
+            await self.db.execute("UPDATE version SET version = :version", {"version": int(migrations[0].stem)})
             log.info("DB initialized.")
 
         async with self.db.execute("SELECT version FROM version") as cursor:
             db_version = await cursor.fetchone()
             db_version = db_version[0]
 
-        # TODO: this is broken
         latest_version = int(migrations[-1].stem)
         if db_version == latest_version:
             log.info("No migrations to apply.")
@@ -155,6 +158,7 @@ class Milton(commands.Bot):
         for migration in to_apply:
             log.debug(f"Applying migration {migration}...")
             await self.db.executescript(migration.read_text())
+            await self.db.execute("UPDATE version SET version = :version", {"version": int(migration.stem)})
             await self.db.commit()
 
         log.info("Done migrating database to new schema.")
@@ -242,34 +246,9 @@ def run_bot():
 
 
 def main():
-    """Run Milton, with extra command line args."""
-    from argparse import ArgumentParser
-
-    log = logging.getLogger(__name__)
-    parser = ArgumentParser()
-
-    parser.add_argument(
-        "--gen_config",
-        help="Generate a config in ~/.milton/config.yml for manual editing.",
-        action="store_true",
-    )
-
-    args = parser.parse_args()
-
-    if args.gen_config:
-        target = Path("~/.milton/config.yml").expanduser()
-
-        if target.exists():
-            log.error(
-                f"A config file already exists ({target}). Refusing to overwrite."
-            )
-            sys.exit(1)
-
-        if not target.parent.exists():
-            os.mkdir(target)
-
-        shutil.copyfile(resources.files(milton).joinpath("default-config.yml"), target)
-        print(f"Created an empty config file @{target}!")
-        sys.exit()
+    """Run Milton!
+    
+    This is here if we ever need to add CLI args to milton.
+    """
 
     run_bot()
