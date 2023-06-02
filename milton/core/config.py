@@ -2,55 +2,43 @@
 
 This is heavily based on the discord python server bot.
 """
-import importlib.resources as pkg_resources
 import logging
+import tomllib as tml
 from pathlib import Path
 
-import tomllib as tml
 from box import Box
 
-from dataclasses import dataclass
-import milton
 from milton.utils.tools import recursive_update
 
 log = logging.getLogger(__name__)
 
 DEFAULTS = {
-    "bot" : {
+    "bot": {
         "token": None,
-        "owner_id": None,
         "pagination_timeout": 300,
         "test_server_id": None,
         "startup_extensions": [
-            "meta", "toys", "birthday", "math_render", "rss", "pdf_render"
+            "meta",
+            "toys",
+            "birthday",
+            "math_render",
+            "rss",
+            "pdf_render",
         ],
     },
-    "database": {
-        "path": "~/.milton/database.sqlite"
-    },
-    "logs": {
-        "path": "~/.milton/logs/mla.log",
-        "file_level": 10,
-        "stdout_level": 30
-    },
-    "prefixes": {
-        "guild": "!!"
-    },
+    "database": {"path": "~/.milton/database.sqlite"},
+    "logs": {"path": "~/.milton/logs/mla.log", "file_level": 10, "stdout_level": 30},
+    "prefixes": {"guild": "!!"},
     "emojis": {
         "trash": "\u274c",
         "next": "\u25b6",
         "back": "\u25c0",
         "last": "\u23e9",
         "first": "\u23ea",
-        "stop": "\u23f9"
+        "stop": "\u23f9",
     },
-    "birthday": {
-        "when": 10
-    },
-    "announcements": {
-        "email": None,
-        "app_password": None
-    }
+    "birthday": {"when": 10},
+    "announcements": {"email": None, "app_password": None},
 }
 
 try:
@@ -68,4 +56,3 @@ except tml.TOMLDecodeError as e:
 # I use a box to avoid accidentally updating + using the cool class attribute
 # access which in my opinion makes perfect sense for static variables.
 CONFIG: Box = Box(recursive_update(DEFAULTS, CONFIG), frozen_box=True)
-

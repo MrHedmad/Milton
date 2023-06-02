@@ -61,8 +61,6 @@ class Milton(commands.Bot):
         """The config used to start Milton"""
         self.started_on: float = time.time()
         """ISO timestamp when the bot was started"""
-        self.owner_id: int = self.config.bot.owner_id
-        """Discord's numerical ID of the owner of the bot"""
         self.http_session: Optional[aiohttp.ClientSession] = None
         """An aiohttp.ClientSession or None if it has not been initialized yet."""
         self.changelog: Changelog = make_changelog(
