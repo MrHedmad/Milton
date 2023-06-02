@@ -153,7 +153,7 @@ class Milton(commands.Bot):
             )
 
         log.info("Found migrations to apply.")
-        to_apply = migrations[(db_version + 1) :]
+        to_apply = migrations[migrations.index(db_version) + 1 :]
         log.info(f"Applying {len(to_apply)} migration(s).")
         for migration in to_apply:
             log.debug(f"Applying migration {migration}...")
