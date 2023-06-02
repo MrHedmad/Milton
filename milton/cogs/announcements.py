@@ -536,4 +536,7 @@ class AnnouncementsCog(GroupCog, name="announcement"):
 
 
 async def setup(bot):
+    log.warn(
+        "The announcement cog is currently in beta testing. It will probably not work."
+    )
     await bot.add_cog(AnnouncementsCog(bot))
