@@ -11,6 +11,7 @@ from aiohttp import ClientSession
 
 log = logging.getLogger(__name__)
 
+
 # Yanked from the python discord bot
 def recursive_update(original: Mapping, new: Mapping) -> Mapping:
     """Recursively update nested dictionaries

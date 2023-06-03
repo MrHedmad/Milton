@@ -3,11 +3,11 @@ import os
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from importlib import resources
+
+from colorama import Back, Fore, Style
+from prompt_toolkit.patch_stdout import StdoutProxy
 
 from milton.core.config import CONFIG
-from milton.core.changelog_parser import make_changelog
-import milton
 
 __all__ = ["__version__", "CHANGELOG"]
 
@@ -19,7 +19,32 @@ log.setLevel(logging.DEBUG)
 log.propagate = False
 # Keep this at DEBUG - set levels in handlers themselves
 
-formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+log_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+
+
+class ColorFormatter(logging.Formatter):
+    # Change this dictionary to suit your coloring needs!
+    COLORS = {
+        "WARNING": Fore.YELLOW,
+        "ERROR": Fore.RED,
+        "DEBUG": Style.BRIGHT + Fore.MAGENTA,
+        "INFO": Fore.GREEN,
+        "CRITICAL": Style.BRIGHT + Fore.RED,
+    }
+
+    def format(self, record):
+        reset = Fore.RESET + Back.RESET + Style.NORMAL
+        color = self.COLORS.get(record.levelname, "")
+        if color:
+            record.name = Style.BRIGHT + Fore.CYAN + record.name + reset
+            if record.levelname != "INFO":
+                record.msg = color + str(record.msg) + reset
+            record.levelname = color + record.levelname + reset
+        return logging.Formatter.format(self, record)
+
+
+console_formatter = ColorFormatter(log_format)
+file_formatter = logging.Formatter(log_format)
 
 _LOG_PATH = Path(CONFIG.logs.path).expanduser().resolve()
 
@@ -33,10 +58,10 @@ file_h = RotatingFileHandler(
     maxBytes=1e5,
     backupCount=5,
 )
-file_h.setFormatter(formatter)
+file_h.setFormatter(file_formatter)
 file_h.setLevel(CONFIG.logs.file_level)
-stream_h = StreamHandler()
-stream_h.setFormatter(formatter)
+stream_h = StreamHandler(StdoutProxy(raw=True))
+stream_h.setFormatter(console_formatter)
 stream_h.setLevel(CONFIG.logs.stdout_level)
 
 log.addHandler(file_h)

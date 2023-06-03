@@ -36,7 +36,6 @@ class PDFRenderCog(commands.Cog, name="PDF renderer"):
 
             # Someone sent a pdf. Render and send a preview of it
             try:
-
                 async with self.bot.http_session.request(
                     "GET", attachment.url
                 ) as stream:
