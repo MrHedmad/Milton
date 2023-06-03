@@ -107,8 +107,7 @@ class CommandInterface(commands.Cog):
                 await self._actions[globbed](*command[1:])
             except KeyError:
                 print(f'{globbed} is not a valid command. Try "help"')
-            except TypeError as e:
-                print(e)
+            except TypeError:
                 print(f"Wrong number of arguments given to {command[0]}")
 
 

@@ -204,16 +204,8 @@ class Milton(commands.Bot):
 
         Every unhandled exception not in a cog ends up here.
         """
-        # Skip the prompt line
-        if "CommandInterface" in self.cogs:
-            print("")
-
         info = sys.exc_info()
         log.exception("Ignoring exception at the bot level", exc_info=info)
-
-        # Re-print the handle for the CLI cog
-        if "CommandInterface" in self.cogs:
-            print(">> ", end="")
 
 
 async def _get_prefix(bot: Milton, message: discord.Message) -> Callable:

@@ -16,19 +16,30 @@ log = logging.getLogger(__name__)
 
 
 class Errors(commands.Cog, name="errors"):
-    """Errors handler."""
+    """Cog to handle errors.
+
+    This cog hadles all errors that are not caught in the single cogs.
+    This means that we want it to:
+        - Handle very common errors, like commands not found or
+          missing/invalid arguments;
+        - Handle internal bot errors that could arise;
+        - Handle informing the user of what went wrong if an unhandled
+          error does eventually arise.
+
+    The cog handles both shlash commands and normal commands.
+    """
 
     def __init__(self, bot: Milton) -> None:
         self.bot = bot
         bot.tree.error(coro=self.__dispatch_to_app_command_handler)
 
-        self.default_error_message = "🕳️ There is an error."
+        self.crash_emoji = "💀"
+        self.handled_emoji = "🔥"
 
-    """def help_custom(self):
-        emoji = "<a:crossmark:842800737221607474>"
-        label = "Error"
-        description = "A custom errors handler. Nothing to see here."
-        return emoji, label, description"""
+        self.default_error_message = (
+            self.crash_emoji + " An undefined error occured. "
+            "If I find out more, I'll update this message."
+        )
 
     async def __dispatch_to_app_command_handler(
         self,
@@ -57,11 +68,10 @@ class Errors(commands.Cog, name="errors"):
     async def get_command_error(
         self, ctx: commands.Context, error: commands.CommandError
     ):
-        """Command Error handler
-        doc: https://discordpy.readthedocs.io/en/master/ext/commands/api.html#exception-hierarchy
-        """
+        """This function handles errors coming from commands."""
+        # Handle HybridCommand cogs
         try:
-            if ctx.interaction:  # HybridCommand Support
+            if ctx.interaction:
                 await self.__respond_to_interaction(ctx.interaction)
                 edit = ctx.interaction.edit_original_message
                 if isinstance(error, commands.HybridCommandError):
@@ -72,85 +82,71 @@ class Errors(commands.Cog, name="errors"):
 
             log.exception(error)
 
+            async def comm(msg, include_emoji=True):
+                msg = self.handled_emoji + " " + msg if include_emoji else msg
+                await edit(content=msg)
+
             raise error
 
-        # ConversionError
-        except commands.ConversionError as d_error:
-            await edit(content=f"🕳️ {d_error}")
-        # UserInputError
-        except commands.MissingRequiredArgument as d_error:
-            await edit(
-                content=f"🕳️ Something is missing. `{ctx.clean_prefix}{ctx.command.name} <{'> <'.join(ctx.command.clean_params)}>`"
-            )
-        # UserInputError -> BadArgument
-        except commands.MemberNotFound or commands.UserNotFound as d_error:
-            await edit(
-                content=f"🕳️ Member `{str(d_error).split(' ')[1]}` not found ! Don't hesitate to ping the requested member."
-            )
-        # UserInputError -> BadUnionArgument | BadLiteralArgument | ArgumentParsingError
-        except (
-            commands.BadArgument
-            or commands.BadUnionArgument
-            or commands.BadLiteralArgument
-            or commands.ArgumentParsingError
-        ) as d_error:
-            await edit(content=f"🕳️ {d_error}")
-        # CommandNotFound
-        except commands.CommandNotFound as d_error:
-            await edit(content=f"🕳️ Command `{str(d_error).split(' ')[1]}` not found !")
-        # CheckFailure
-        except commands.PrivateMessageOnly:
-            await edit(
-                content="🕳️ This command canno't be used in a guild, try in direct message."
-            )
-        except commands.NoPrivateMessage:
-            await edit(content="🕳️ This is not working as excpected.")
-        except commands.NotOwner:
-            await edit(content="🕳️ You must own this bot to run this command.")
-        except commands.MissingPermissions as d_error:
-            await edit(
-                content=f"🕳️ Your account require the following permissions: `{'` `'.join(d_error.missing_permissions)}`."
-            )
-        except commands.BotMissingPermissions as d_error:
-            if not "send_messages" in d_error.missing_permissions:
-                await edit(
-                    content=f"🕳️ The bot require the following permissions: `{'` `'.join(d_error.missing_permissions)}`."
-                )
-        except (
-            commands.CheckAnyFailure
-            or commands.MissingRole
-            or commands.BotMissingRole
-            or commands.MissingAnyRole
-            or commands.BotMissingAnyRole
-        ) as d_error:
-            await edit(content=f"🕳️ {d_error}")
-        except commands.NSFWChannelRequired:
-            await edit(content="🕳️ This command require an NSFW channel.")
-        # DisabledCommand
-        except commands.DisabledCommand:
-            await edit(content="🕳️ Sorry this command is disabled.")
-        # CommandInvokeError
-        except commands.CommandInvokeError as d_error:
-            await edit(content=f"🕳️ {d_error.original}")
-        # CommandOnCooldown
-        except commands.CommandOnCooldown as d_error:
-            await edit(
-                content=f"🕳️ Command is on cooldown, wait `{str(d_error).split(' ')[7]}` !"
-            )
-        # MaxConcurrencyReached
-        except commands.MaxConcurrencyReached as d_error:
-            await edit(
-                content=f"🕳️ Max concurrency reached. Maximum number of concurrent invokers allowed: `{d_error.number}`, per `{d_error.per}`."
-            )
-        # HybridCommandError
-        except commands.HybridCommandError as d_error:
-            await self.get_app_command_error(ctx.interaction, error)
-        # Milton Input Errors.
         except MiltonInputError as e:
-            await edit(content=f"Cannot parse your input, sorry: {e.msg}")
+            await comm(f"Sorry, I cannot parse your input: {e}")
+
         except Exception as e:
-            pass
-            # log.error(e)
+            match e:
+                case commands.ConversionError:
+                    await comm(e)
+                case commands.UserInputError:
+                    await comm(
+                        f"Missing Input: `{ctx.clean_prefix}{ctx.command.name}` <{'><'.join(ctx.command.clean_params)}"
+                    )
+                case commands.MemberNotFound | commands.UserNotFound:
+                    await comm(f"Member `{str(e).split(' ')[1]}` not found.")
+                case commands.BadArgument | commands.BadUnionArgument | commands.BadLiteralArgument | commands.ArgumentParsingError:
+                    await comm(f"{e}")
+                case commands.CommandNotFound:
+                    await comm(f"Command {e.split(' ')[1]} not found.")
+                case commands.PrivateMessageOnly:
+                    await comm(
+                        f"This command cannot be used in a server. Send me a direct message instead!"
+                    )
+                case commands.NoPrivateMessage:
+                    await comm(
+                        "This command cannot be used in private messages, only a server."
+                    )
+                case commands.NotOwner:
+                    await comm("You must be the owner of the bot to use this command.")
+                case commands.MissingPermissions:
+                    await comm(
+                        f"You cannot run this command. You require the following permissions: `{'` `'.join(e.missing_permissions)}`"
+                    )
+                case commands.BotMissingPermissions:
+                    await comm(
+                        f"I miss permissions in order to run this: `{'` `'.join(e.missing_permissions)}`"
+                    )
+                case commands.CheckAnyFailure | commands.MissingRole | commands.BotMissingRole | commands.MissingAnyRole | commands.BotMissingAnyRole:
+                    await comm(f"{e}")
+                case commands.NSFWChannelRequired:
+                    await comm(f"This must only be used in a NSFW channel.")
+                case commands.DisabledCommand:
+                    await comm(f"This command is disabled. Sorry!")
+                case commands.CommandInvokeError:
+                    await comm(f"Ivalid invoke: {e.original}")
+                case commands.CommandOnCooldown:
+                    await comm(
+                        f"Command is on cooldown, wait `{str(d_error).split(' ')[7]}`!"
+                    )
+                case commands.MaxConcurrencyReached:
+                    await comm(
+                        (
+                            "Max concurrency reached."
+                            f"Max concurrent invokers allowed: `{e.number}` per `{e.per}`."
+                        )
+                    )
+                case commands.HybridCommandError:
+                    await self.get_app_command_error(ctx.interaction, e)
+                case _:
+                    # Do not log the exception here. It is already logged above.
+                    await comm(f"Unrecognized error!\n{e}")
 
     @commands.Cog.listener("on_app_command_error")
     async def get_app_command_error(
@@ -165,43 +161,44 @@ class Errors(commands.Cog, name="errors"):
             await self.__respond_to_interaction(interaction)
             edit = interaction.edit_original_response
 
+            async def comm(msg, include_emoji=True):
+                msg = self.handled_emoji + " " + msg if include_emoji else msg
+                await edit(content=msg)
+
             log.exception(error)
 
             raise error
-        except app_commands.CommandInvokeError as d_error:
-            if isinstance(d_error.original, discord.errors.InteractionResponded):
-                await edit(content=f"🕳️ {d_error.original}")
-            elif isinstance(d_error.original, discord.errors.Forbidden):
-                await edit(
-                    content=f"🕳️ `{type(d_error.original).__name__}` : {d_error.original.text}"
-                )
-            else:
-                await edit(
-                    content=f"🕳️ `{type(d_error.original).__name__}` : {d_error.original}"
-                )
-        except app_commands.CheckFailure as d_error:
-            if isinstance(d_error, app_commands.errors.CommandOnCooldown):
-                await edit(
-                    content=f"🕳️ Command is on cooldown, wait `{str(d_error).split(' ')[7]}` !"
-                )
-            else:
-                await edit(content=f"🕳️ `{type(d_error).__name__}` : {d_error}")
-        except app_commands.CommandNotFound:
-            await edit(
-                content=f"🕳️ Command was not found.. Seems to be a discord bug, probably due to desynchronization.\nMaybe there is multiple commands with the same name, you should try the other one."
-            )
+
         except MiltonInputError as e:
-            await edit(content=f"Cannot parse your input, sorry: {e.msg}")
+            await comm(f"Cannot parse your input: {e}")
+
         except Exception as e:
-            """
-            Caught here:
-            app_commands.TransformerError
-            app_commands.CommandLimitReached
-            app_commands.CommandAlreadyRegistered
-            app_commands.CommandSignatureMismatch
-            """
-            pass
-            # log.exception(e)
+            match type(e):
+                case app_commands.CommandInvokeError:
+                    if isinstance(e.original, discord.errors.InteractionResponded):
+                        await comm(f"{e.original}")
+                    elif isinstance(e.original, discord.errors.Forbidden):
+                        await comm(f"`{type(e.original).__name__}` : {e.original.text}")
+                    else:
+                        await comm(f"`{type(e.original).__name__}` : {e.original}")
+                case app_commands.CheckFailure:
+                    if isinstance(e, app_commands.errors.CommandOnCooldown):
+                        await comm(
+                            f"Command is on cooldown, wait `{str(e).split(' ')[7]}` !"
+                        )
+                    else:
+                        await comm(f"`{type(e).__name__}` : {e}")
+                case app_commands.CommandNotFound:
+                    await comm(
+                        (
+                            "Wait a moment... That command does not exist! "
+                            "I might be out of sync. It should solve itself out, "
+                            "but if it does not, please let the devs know!"
+                        )
+                    )
+                case _:
+                    # Do not log.exception(e) here, it is already done above.
+                    pass
 
     @commands.Cog.listener("on_view_error")
     async def get_view_error(
