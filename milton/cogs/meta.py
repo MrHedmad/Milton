@@ -43,7 +43,7 @@ class MetaCog(commands.Cog, name="Meta"):
         # Time
         since = datetime.timedelta(seconds=time.time() - self.bot.started_on)
 
-        embed.title = "**Milton Library Assistant - Status**"
+        embed.title = "**Milton Lab Assistant - Status**"
         embed.add_field(name="Version", value=f"{me}")
         embed.add_field(name="Python Version", value=python)
         embed.add_field(name="OS Information", value=f"{os}")
@@ -63,7 +63,7 @@ class MetaCog(commands.Cog, name="Meta"):
         """
         embed = discord.Embed()
         embed.set_thumbnail(url=str(self.bot.user.display_avatar.url))
-        embed.set_author(name="Milton Library Assistant")
+        embed.set_author(name="Milton Lab Assistant")
         embed.title = "Find me on GitHub!"
         embed.url = r"https://github.com/MrHedmad/Milton"
         await interaction.response.send_message(embed=embed)
@@ -86,7 +86,7 @@ class MetaCog(commands.Cog, name="Meta"):
         """Display the full changelog for the bot"""
         out = self.bot.changelog.to_paginator()
         out.url = r"https://github.com/MrHedmad/Milton/blob/master/CHANGELOG.md"
-        out.title = "Milton Library Assistant Changelog"
+        out.title = "Milton Lab Assistant Changelog"
         await out.paginate(interaction)
 
     @app_commands.command(name="inside")

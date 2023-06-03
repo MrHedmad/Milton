@@ -1,13 +1,13 @@
 # The Milton Lab Assistant
-[![License](https://img.shields.io/github/license/MrHedmad/Milton-Library-Assistant?style=flat-square)](https://choosealicense.com/licenses/mit/)
+[![License](https://img.shields.io/github/license/MrHedmad/Milton?style=flat-square)](https://choosealicense.com/licenses/mit/)
 [![Required Python Version](https://img.shields.io/badge/Python-3.10-blue?style=flat-square)](https://python.org)
 [![Code Style](https://img.shields.io/badge/style-Black-black?style=flat-square)](https://github.com/psf/black)
 [![Issues](https://img.shields.io/github/issues/mrhedmad/milton?style=flat-square)](https://github.com/MrHedmad/Milton/issues)
 
 Home of Milton Lab Assistant - the Discord Bot.
 > There is only me, and you, and an eternity of doubt.
-> 
-> — <cite>Milton</cite> 
+>
+> — <cite>Milton</cite>
 
 ## About
 
@@ -24,7 +24,7 @@ There are two ways to run your own instance of Milton:
 4. Configure the bot, such as adding your bot token (see below).
 5. Run the bot by executing `milton` (while in the `env`).
 
-To re-run the bot after you install it, run `milton` again while in the virtual environment. 
+To re-run the bot after you install it, run `milton` again while in the virtual environment.
 
 ### Configuration
 

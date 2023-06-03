@@ -493,7 +493,7 @@ def make_changelog(path: Union[str, Path]) -> Changelog:
             changelog file.
     """
     pages = parse_changelog(path)
-    changelog = Changelog(title="Milton Library Assistant - Changelog")
+    changelog = Changelog(title="Milton Lab Assistant - Changelog")
 
     if len(pages) == 1:
         changelog.add_page(pages[0])
