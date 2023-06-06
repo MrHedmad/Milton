@@ -81,14 +81,6 @@ class MetaCog(commands.Cog, name="Meta"):
         embed.add_field(name="Discord Websocket Latency", value=str(self.bot.latency))
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="changes")
-    async def changes(self, interaction: Interaction):
-        """Display the full changelog for the bot"""
-        out = self.bot.changelog.to_paginator()
-        out.url = r"https://github.com/MrHedmad/Milton/blob/master/CHANGELOG.md"
-        out.title = "Milton Lab Assistant Changelog"
-        await out.paginate(interaction)
-
     @app_commands.command(name="inside")
     @app_commands.guilds(discord.Object(id=311200788858798080))
     async def subscribe(self, interaction: Interaction):

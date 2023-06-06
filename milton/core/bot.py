@@ -15,7 +15,6 @@ from discord.ext.commands.bot import when_mentioned, when_mentioned_or
 from discord.ext.commands.errors import ExtensionNotFound
 
 import milton
-from milton.core.changelog_parser import Changelog, make_changelog
 from milton.core.config import CONFIG
 
 log = logging.getLogger(__name__)
@@ -63,10 +62,6 @@ class Milton(commands.Bot):
         """ISO timestamp when the bot was started"""
         self.http_session: Optional[aiohttp.ClientSession] = None
         """An aiohttp.ClientSession or None if it has not been initialized yet."""
-        self.changelog: Changelog = make_changelog(
-            self.path_to_myself.parent / "CHANGELOG.md"
-        )
-        """The bot's changelog object"""
         self.version: str = milton.__version__
         """The bot's version string"""
 
@@ -129,6 +124,8 @@ class Milton(commands.Bot):
         migrations = [x for x in migrations if x.suffix == ".sql"]
         migrations.sort(key=lambda x: x.stem)
 
+        assert migrations, "No migrations found. Something has gone terribly wrong."
+
         if initialize:
             log.info("Initializing new empty DB.")
             initial_script = migrations[0]
@@ -154,7 +151,11 @@ class Milton(commands.Bot):
             )
 
         log.info("Found migrations to apply.")
-        to_apply = migrations[migrations.index(db_version) + 1 :]
+        # This is a bit fragile...
+        migration_stems = [x.stem for x in migrations]
+        print(migration_stems)
+        print(db_version)
+        to_apply = migrations[migration_stems.index(f"{db_version}") + 1 :]
         log.info(f"Applying {len(to_apply)} migration(s).")
         for migration in to_apply:
             log.debug(f"Applying migration {migration}...")
