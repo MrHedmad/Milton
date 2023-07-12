@@ -54,7 +54,13 @@ class PDFRenderCog(commands.Cog, name="PDF renderer"):
             render = render[0]  # We get a list of 1 item here
 
             width, height = render.size
-            render = render.crop(box=(0, 0, width, height / 2))
+
+            if width > height:
+                # This is a landscape pdf. Don't crop it
+                render = render.crop(box=(0, 0, width, height))
+            else:
+                # This is a portrait pdf. Crop it to the top half
+                render = render.crop(box=(0, 0, width, height / 2))
 
             with BytesIO() as byte_container:
                 render.save(byte_container, "PNG")
@@ -65,8 +71,8 @@ class PDFRenderCog(commands.Cog, name="PDF renderer"):
                 text="Automatic PDF preview rendering"
             )
 
-            info = file_metadata.getDocumentInfo()
-            file_len = file_metadata.getNumPages()
+            info = file_metadata.metadata
+            file_len = len(file_metadata.pages)
 
             if info.title:
                 embed.add_field(name="Title", value=info.title)
