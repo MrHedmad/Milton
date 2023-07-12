@@ -86,7 +86,7 @@ class Milton(commands.Bot):
             try:
                 await self.load_extension(f"milton.cogs.{cog}")
             except ExtensionNotFound as e:
-                log.exception(e)
+                log.error(f"Cannot find startup cog {cog}. Continuing.")
                 continue
 
         # Send the slash commands to discord for syncing.
