@@ -4,6 +4,7 @@ Mostly based on (aka completely yanked from) this example:
 https://github.com/PaulMarisOUMary/Discord-Bot/blob/main/cogs/errors.py
 """
 import logging
+import traceback
 
 import discord
 from discord import app_commands
@@ -80,7 +81,8 @@ class Errors(commands.Cog, name="errors"):
                 discord_message = await ctx.send(self.default_error_message)
                 edit = discord_message.edit
 
-            log.exception(error)
+            trace = "".join(traceback.format_tb(error.original.__traceback__))
+            log.error(f"Got an error: {error.original} \n{trace}")
 
             async def comm(msg, include_emoji=True):
                 msg = self.handled_emoji + " " + msg if include_emoji else msg

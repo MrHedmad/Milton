@@ -248,4 +248,10 @@ async def setup(bot):
             print("Leaving guild failed. Milton might be the owner of the guild.")
         print(f"Left guilds {target.name} with snowflake {target.id}")
 
+    @interface.add_option
+    async def sync_tree():
+        """Sync all app commands with Discord"""
+        print("Syncing all app commands...")
+        await interface.bot.tree.sync()
+
     await bot.add_cog(interface)
