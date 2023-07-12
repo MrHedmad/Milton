@@ -3,7 +3,6 @@ import logging
 from inspect import cleandoc
 from typing import Coroutine, Mapping, Optional
 
-from aioconsole import ainput
 from discord.errors import HTTPException
 from discord.ext import commands
 from discord.ext.commands.errors import (
@@ -12,6 +11,8 @@ from discord.ext.commands.errors import (
     ExtensionNotLoaded,
     NoEntryPointError,
 )
+from prompt_toolkit import PromptSession
+from prompt_toolkit.patch_stdout import patch_stdout
 from tabulate import tabulate
 
 from milton.core.bot import Milton
@@ -42,6 +43,10 @@ class CommandInterface(commands.Cog):
         self._actions: Mapping = {}
         self._descriptions: Mapping = {}
         self._prompt: str = prompt
+        self.session: PromptSession = PromptSession(
+            self._prompt,
+            reserve_space_for_menu=1,
+        )
 
         self.add_option(self.help_option, trigger="help", desc="Print this list")
 
@@ -80,7 +85,8 @@ class CommandInterface(commands.Cog):
         await self.bot.wait_until_ready()
         log.debug("Starting the CLI service")
         while True:
-            command = await ainput(self._prompt)
+            with patch_stdout():
+                command = await self.session.prompt_async()
 
             if len(command) == 0:
                 continue
@@ -101,8 +107,7 @@ class CommandInterface(commands.Cog):
                 await self._actions[globbed](*command[1:])
             except KeyError:
                 print(f'{globbed} is not a valid command. Try "help"')
-            except TypeError as e:
-                print(e)
+            except TypeError:
                 print(f"Wrong number of arguments given to {command[0]}")
 
 

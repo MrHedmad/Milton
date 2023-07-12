@@ -1,0 +1,2 @@
+include milton/resources/*.txt
+include milton/schemas/*.sql

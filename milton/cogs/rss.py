@@ -6,10 +6,9 @@ import re
 import discord
 import feedparser
 from discord import Interaction, app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from milton.core.bot import Milton
-from milton.utils import tasks
 
 log = logging.getLogger(__name__)
 

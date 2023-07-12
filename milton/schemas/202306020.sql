@@ -13,5 +13,3 @@ CREATE TABLE announcement_roles (
     guild_id INT NOT NULL,
     role INT NOT NULL
 );
-
-UPDATE version SET version = 1;

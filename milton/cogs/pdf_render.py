@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Cog
 from pdf2image import convert_from_bytes
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from milton.core.bot import Milton
 
@@ -36,7 +36,6 @@ class PDFRenderCog(commands.Cog, name="PDF renderer"):
 
             # Someone sent a pdf. Render and send a preview of it
             try:
-
                 async with self.bot.http_session.request(
                     "GET", attachment.url
                 ) as stream:

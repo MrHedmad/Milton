@@ -1,11 +1,9 @@
-import importlib.resources as pkg_resources
 import logging
-import os
-import shutil
 import sys
 import time
+from importlib import resources
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 
 import aiohttp
 import aiosqlite
@@ -16,8 +14,7 @@ from discord.ext import commands
 from discord.ext.commands.bot import when_mentioned, when_mentioned_or
 from discord.ext.commands.errors import ExtensionNotFound
 
-from milton import ROOT
-from milton.core.changelog_parser import Changelog, Version, make_changelog
+import milton
 from milton.core.config import CONFIG
 
 log = logging.getLogger(__name__)
@@ -33,14 +30,14 @@ _______\/\\\_____________\/\\\______\/\\\_______________\/\\\_______\/\\\___
 ________\/\\\_____________\/\\\______\/\\\\\\\\\\\\\\____\/\\\_______\/\\\__
 _________\///______________\///_______\//////////////_____\///________\///__
 
-Welcome to the Milton Library Assistant!
+Welcome to the Milton Lab Assistant!
 """
 
 
 class Milton(commands.Bot):
     """There is only me, and you, and an eternity of doubt.
 
-    This is the Bot instance of Milton. It inherits from :class:`commands.Bot`
+    This is the Bot instance of Milton. It inherits from dpy "Bot",
     so anything passed there can be passed here too.
 
     Args:
@@ -57,16 +54,16 @@ class Milton(commands.Bot):
 
     def __init__(self, config: Box, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.path_to_myself: Path = Path(resources.files(milton))
+        """The path to the package installation. To source data from."""
         self.config: Box = config  # Bundle the config inside the bot itself.
+        """The config used to start Milton"""
         self.started_on: float = time.time()
-        self.owner_id: int = self.config.bot.owner_id
-        self.http_session = None
-
-        # move from here to the CHANGELOG file
-        path = ROOT.parent
-        path /= "CHANGELOG.md"
-        self.changelog: Changelog = make_changelog(path)
-        self.version: Version = self.changelog.latest_version
+        """ISO timestamp when the bot was started"""
+        self.http_session: Optional[aiohttp.ClientSession] = None
+        """An aiohttp.ClientSession or None if it has not been initialized yet."""
+        self.version: str = milton.__version__
+        """The bot's version string"""
 
     async def setup_hook(self):
         # Add AIOHTTP session
@@ -80,7 +77,7 @@ class Milton(commands.Bot):
         # Essential extensions
         for cog in essentials:
             try:
-                await self.load_extension(f"milton.core.cogs.{cog}")
+                await self.load_extension(f"milton.core.{cog}")
             except ExtensionNotFound as e:
                 log.exception(e)
                 continue
@@ -89,12 +86,15 @@ class Milton(commands.Bot):
             try:
                 await self.load_extension(f"milton.cogs.{cog}")
             except ExtensionNotFound as e:
-                log.exception(e)
+                log.error(f"Cannot find startup cog {cog}. Continuing.")
                 continue
 
+        # Send the slash commands to discord for syncing.
+        # This should not be called too many times but it's good here.
         await self.tree.sync()
 
         db_path = Path(CONFIG.database.path).expanduser().absolute()
+        # If the DB is not there, we need to initialize it
         initialize_db = not db_path.exists()
 
         self.db: aiosqlite.Connection = await aiosqlite.connect(db_path)
@@ -102,18 +102,39 @@ class Milton(commands.Bot):
         await self.migrate(initialize_db)
 
     async def on_ready(self):
-        log.info(f"Logged in as {self.user}. Ready.")
+        log.info(f"Logged in as {self.user}. Milton is Ready!")
 
     async def migrate(self, initialize=False):
-        migrations = list((ROOT / "schemas").iterdir())
+        """Apply migrations to the database from one version to another
+
+        The bot's database needs a way to be migrated between versions.
+        This is it - migrations in the schemas folder are applied to the
+        database, in order, to get from some old version to the latest.
+
+        The database version is stored in the database itself.
+
+        What migrations to apply and the order to apply them are sourced from
+        the migrations.txt file.
+
+        See the README.md file in the `schemas` folder for more information.
+        """
+        migrations = list((self.path_to_myself / "schemas").iterdir())
         migrations.remove([x for x in migrations if x.name == "__init__.py"][0])
+        # Remove non-sql files
+        migrations = [x for x in migrations if x.suffix == ".sql"]
         migrations.sort(key=lambda x: x.stem)
+
+        assert migrations, "No migrations found. Something has gone terribly wrong."
 
         if initialize:
             log.info("Initializing new empty DB.")
-            initial_script = [x for x in migrations if x.name == "0.sql"][0]
+            initial_script = migrations[0]
 
             await self.db.executescript(initial_script.read_text())
+            await self.db.execute(
+                "UPDATE version SET version = :version",
+                {"version": int(migrations[0].stem)},
+            )
             log.info("DB initialized.")
 
         async with self.db.execute("SELECT version FROM version") as cursor:
@@ -130,11 +151,17 @@ class Milton(commands.Bot):
             )
 
         log.info("Found migrations to apply.")
-        to_apply = migrations[(db_version + 1) :]
+        # This is a bit fragile...
+        migration_stems = [x.stem for x in migrations]
+        to_apply = migrations[migration_stems.index(f"{db_version}") + 1 :]
         log.info(f"Applying {len(to_apply)} migration(s).")
         for migration in to_apply:
             log.debug(f"Applying migration {migration}...")
             await self.db.executescript(migration.read_text())
+            await self.db.execute(
+                "UPDATE version SET version = :version",
+                {"version": int(migration.stem)},
+            )
             await self.db.commit()
 
         log.info("Done migrating database to new schema.")
@@ -176,23 +203,15 @@ class Milton(commands.Bot):
 
         Every unhandled exception not in a cog ends up here.
         """
-        # Skip the prompt line
-        if "CommandInterface" in self.cogs:
-            print("")
-
         info = sys.exc_info()
         log.exception("Ignoring exception at the bot level", exc_info=info)
-
-        # Re-print the handle for the CLI cog
-        if "CommandInterface" in self.cogs:
-            print(">> ", end="")
 
 
 async def _get_prefix(bot: Milton, message: discord.Message) -> Callable:
     """Returns the function to correctly get the prefix based on context.
 
     Attributes:
-        bot: The bot to get the prefox for
+        bot: The bot to get the prefix for
         message: The message that is triggering the prefix retrieving.
 
     Returns:
@@ -204,6 +223,7 @@ async def _get_prefix(bot: Milton, message: discord.Message) -> Callable:
 
 
 def run_bot():
+    """Instantiate the Milton class and run the bot"""
     log.debug("Making the Milton Bot instance")
 
     intents = discord.Intents.all()
@@ -221,34 +241,9 @@ def run_bot():
 
 
 def main():
-    """Run Milton, with extra command line args."""
-    from argparse import ArgumentParser
+    """Run Milton!
 
-    log = logging.getLogger(__name__)
-    parser = ArgumentParser()
-
-    parser.add_argument(
-        "--gen_config",
-        help="Generate a config in ~/.milton/config.yml for manual editing.",
-        action="store_true",
-    )
-
-    args = parser.parse_args()
-
-    if args.gen_config:
-        target = Path("~/.milton/config.yml").expanduser()
-
-        if target.exists():
-            log.error(
-                f"A config file already exists ({target}). Refusing to overwrite."
-            )
-            sys.exit(1)
-
-        if not target.parent.exists():
-            os.mkdir(target)
-
-        shutil.copyfile(pkg_resources.path("milton", "default-config.yml"), target)
-        print(f"Created an empty config file @{target}!")
-        sys.exit()
+    This is here if we ever need to add CLI args to milton.
+    """
 
     run_bot()

@@ -72,6 +72,7 @@ class Paginator(commands.Paginator):
         Args:
             interaction: The interaction to reply to.
         """
+
         # Yanked and modified from the python discord bot paginator
         def event_check(reaction_: discord.Reaction, user_: discord.Member) -> bool:
             """Make sure that this reaction is what we want to operate on."""

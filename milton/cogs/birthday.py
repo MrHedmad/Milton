@@ -7,11 +7,10 @@ from typing import Optional
 
 import discord
 from discord import Interaction, app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from milton.core.bot import Milton
 from milton.core.config import CONFIG
-from milton.utils import tasks
 from milton.utils.enums import Months
 from milton.utils.paginator import Paginator
 from milton.utils.tools import unwrap
@@ -115,7 +114,7 @@ class BirthdayCog(commands.GroupCog, name="birthday"):
     def cog_unload(self):
         self.check_birthdays_task.stop()
 
-    @tasks.loop(at=dt.time(hour=CONFIG.birthday.when), hours=24)
+    @tasks.loop(time=dt.time(hour=CONFIG.birthday.when))
     async def check_birthdays_task(self):
         """Tasks the checking of the birthdays in a loop"""
         log.info("Checking today's birthdays...")

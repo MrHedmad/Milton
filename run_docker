@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -e
+
+if [ ! $# -eq 1 ]; then
+    TAG='latest'
+else
+    TAG=$1
+fi
+
+# This is very limited:
+# - It does not allow for configuring where the databasi will be
+# - It does not allow for other milton.toml locations
+# - It does not follow the options in the milton.toml file (related to above)
+docker run -it --rm -v $HOME/.milton:/home/milton/.milton -v $HOME/.config/milton/:/home/milton/.config/milton/ mrhedmad/milton:$TAG

@@ -2,33 +2,57 @@
 
 This is heavily based on the discord python server bot.
 """
-import importlib.resources as pkg_resources
 import logging
+import tomllib as tml
 from pathlib import Path
 
-import yaml
 from box import Box
 
-import milton
 from milton.utils.tools import recursive_update
 
 log = logging.getLogger(__name__)
 
-try:
-    with pkg_resources.open_text(milton, "default-config.yml") as stream:
-        _DEFAULT_CONFIG = yaml.safe_load(stream)
-except FileNotFoundError as err:
-    log.error("Cannot find the default config file (default-config.yml)")
-    raise
+DEFAULTS = {
+    "bot": {
+        "token": None,
+        "pagination_timeout": 300,
+        "test_server_id": None,
+        "startup_extensions": [
+            "meta",
+            "toys",
+            "birthday",
+            "math_render",
+            "rss",
+            "pdf_render",
+        ],
+    },
+    "database": {"path": "~/.milton/database.sqlite"},
+    "logs": {"path": "~/.milton/logs/mla.log", "file_level": 10, "stdout_level": 30},
+    "prefixes": {"guild": "!!"},
+    "emojis": {
+        "trash": "\u274c",
+        "next": "\u25b6",
+        "back": "\u25c0",
+        "last": "\u23e9",
+        "first": "\u23ea",
+        "stop": "\u23f9",
+    },
+    "birthday": {"when": 10},
+    "announcements": {"email": None, "app_password": None},
+}
 
 try:
-    with Path("~/.milton/config.yml").expanduser().open("r") as stream:
-        log.info("Searching and loading config file (config.yml).")
-        CONFIG = yaml.safe_load(stream)
+    with Path("~/.config/milton/milton.toml").expanduser().open("rb") as stream:
+        log.info("Searching and loading config file (/.config/milton/milton.toml).")
+        CONFIG = tml.load(stream)
 except FileNotFoundError as err:
-    log.info("No config file found. Using default parameters")
-    CONFIG = {}
+    log.info("No config file found. Using default parameters.")
+    CONFIG = DEFAULTS
+except tml.TOMLDecodeError as e:
+    log.error("Failed to parse TOML configuration file: {e}")
+    log.warning("Failed to load custom config. Using default parameters.")
+    CONFIG = DEFAULTS
 
 # I use a box to avoid accidentally updating + using the cool class attribute
 # access which in my opinion makes perfect sense for static variables.
-CONFIG: Box = Box(recursive_update(_DEFAULT_CONFIG, CONFIG), frozen_box=True)
+CONFIG: Box = Box(recursive_update(DEFAULTS, CONFIG), frozen_box=True)
