@@ -38,7 +38,6 @@ DEFAULTS = {
         "stop": "\u23f9",
     },
     "birthday": {"when": 10},
-    "announcements": {"email": None, "app_password": None},
 }
 
 try:
