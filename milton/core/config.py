@@ -40,17 +40,9 @@ DEFAULTS = {
     "birthday": {"when": 10},
 }
 
-try:
-    with Path("~/.config/milton/milton.toml").expanduser().open("rb") as stream:
-        log.info("Searching and loading config file (/.config/milton/milton.toml).")
-        CONFIG = tml.load(stream)
-except FileNotFoundError as err:
-    log.info("No config file found. Using default parameters.")
-    CONFIG = DEFAULTS
-except tml.TOMLDecodeError as e:
-    log.error("Failed to parse TOML configuration file: {e}")
-    log.warning("Failed to load custom config. Using default parameters.")
-    CONFIG = DEFAULTS
+with Path("~/.config/milton/milton.toml").expanduser().open("rb") as stream:
+    log.info("Searching and loading config file (/.config/milton/milton.toml).")
+    CONFIG = tml.load(stream)
 
 # I use a box to avoid accidentally updating + using the cool class attribute
 # access which in my opinion makes perfect sense for static variables.

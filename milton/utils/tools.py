@@ -5,8 +5,8 @@ from datetime import datetime, time, timedelta
 from difflib import get_close_matches
 from pathlib import Path
 from typing import Any, List, Mapping, Optional, Tuple, Union
+from asyncio import Timeout
 
-import async_timeout
 from aiohttp import ClientSession
 
 log = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ async def fetch(session: ClientSession, url: str, params: Mapping = {}):
     Returns:
         The fetched string.
     """
-    async with async_timeout.timeout(10):
+    async with Timeout(10):
         async with session.get(url, params=params) as response:
             return await response.text()
 
