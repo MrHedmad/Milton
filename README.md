@@ -16,9 +16,24 @@ It has specific features designed with research and a laboratory in mind.
 The bot uses a local [SQLite](https://https://www.sqlite.org/index.html/) database to store its data.
 
 ## Deploy your own instance
-To install and run milton, follow these instructions:
-1. Install `python 3.10` or later and `git`.
-   I assume that `python` points to the Python 3.11 interpreter;
+You first need to install Milton. You can do it either with Docker or locally.
+
+### With Docker
+If you have Docker, you can either run `./run_docker` to have docker fetch the latest remote image for you,
+or you could manually rebuild the docker container by cloning the repo and executing:
+```bash
+cd Milton
+docker build -t mrhedmad/milton:latest .
+./run_docker
+```
+The `run_docker` script as of today only support default paths for the database and the config file for milton,
+mounting these defaults inside the container.
+If you changed them, look into the `run_docker` script and edit the `run` command accordingly.
+
+### Locally
+To install and run milton locally, follow these instructions:
+1. Install `python 3.13` or later and `git`.
+   I assume that `python` points to the Python 3.13 interpreter;
 2. Optionally, but highly advised, make a virtual environment and enter it with
    `python -m venv env` followed by `source env/bin/activate`.
 3. Install the bot with `pip install git+https://github.com/MrHedmad/Milton.git@release`.
@@ -75,35 +90,24 @@ providing your own [discord bot token](https://discord.com/developers/applicatio
 Milton will not start without a token.
 
 ### Invite your bot
-In the Discord Developers panel you can get a link
+In the Discord Developers panel you can get a link to invite your bot to your guild.
+You can generate a link in the `Installation` tab.
+Once you do, simply use it and invite the bot.
+
+You will need to assign permissions to Milton before you invite it.
+I usually give it most permissions.
+
+Note that some commands require the priviledged intent "Message Content", which
+you have to enable in the "Bot" tab of the Discord Developer Portal.
 
 ### Interactive use
 When you launch milton, a CLI will appear.
 Here, you may launch admin commands to manage your milton instance.
 You can get a list of all commands using `help`.
 
-Note: Misspelled commands are (lightly) grobbed to what Milton thinks you want.
+Note: Misspelled commands are (lightly) globbed to what Milton thinks you want.
 This was mainly implemented since I constanly misspell `shutdown`.
 
 # Contributing to Milton
 
-You can contribute to the bot by adding an extension that does something cool.
-Extensions should be put in the `cogs` folder and loaded in the `bot.py` script.
-More information on how to correctly write extensions can be found in the
-[`discord.py` documentation](https://discordpy.readthedocs.io/en/latest/).
-
-I welcome and will review all pull requests. 
-
-## Setting up for development
-To setup for developing Milton, you will need `python 3.11` installed.
-[Follow the standard GitHub contributing workflow](https://docs.github.com/en/get-started/quickstart/contributing-to-projects).
-
-I strongly suggest working in a virtual environment.
-Install the dev dependencies with `pip install -r requirements-dev.txt`,
-then setup `pre-commit` with `pre-commit install`.
-
-We follow the [`black`](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html) code style
-and the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
-commit message style.
-The conventional commits standard that I follow is [here](https://github.com/MrHedmad/MrHedmad/blob/1bd723e6a4b59689aba8e19136178428ce7932ca/defaults/.gitlint).
-
+Please take a look at the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information.
