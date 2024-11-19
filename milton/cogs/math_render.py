@@ -2,6 +2,7 @@ import asyncio
 import io
 import logging
 import re
+from itertools import batched
 
 import discord
 from discord import Message
@@ -25,13 +26,11 @@ class MathRenderCog(commands.Cog, name="Math renderer"):
         if message.author.bot:
             return
 
-        match = FIND_MATH_REGEX.search(message.content)
-        if not match:
+        formulae = FIND_MATH_REGEX.findall(message.content)
+        if not formulae:
             return
 
         log.debug(f"Got a formula match for message {message.content}")
-
-        formulae = match.groups()
         # Check if at least one formula is valid
         # Very long formulae are probably invalid.
         formulae = [x for x in formulae if len(x) < 400]
@@ -85,8 +84,11 @@ class MathRenderCog(commands.Cog, name="Math renderer"):
             log.debug(f"Timed out waiting for reaction on message {message.id}")
             return
 
-        for render in renders:
-            await message.reply(file=discord.File(render))
+        for i, render in enumerate(renders):
+            if i != 0:
+                await message.channel.send(file=discord.File(render))
+            else:
+                await message.reply(file=discord.File(render))
 
 
 async def setup(bot: Milton):
