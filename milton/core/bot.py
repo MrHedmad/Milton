@@ -118,7 +118,10 @@ class Milton(commands.Bot):
 
         See the README.md file in the `schemas` folder for more information.
         """
-        migrations = list((self.path_to_myself / "schemas").iterdir())
+        migrations_path = self.path_to_myself / "schemas"
+        log.info(f"Looking into {migrations_path} for migrations...")
+        migrations = list(migrations_path.iterdir())
+        log.info(f"Raw migrations found: {migrations}")
         migrations.remove([x for x in migrations if x.name == "__init__.py"][0])
         # Remove non-sql files
         migrations = [x for x in migrations if x.suffix == ".sql"]

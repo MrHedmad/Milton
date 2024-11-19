@@ -8,7 +8,9 @@ else
 fi
 
 # This is very limited:
-# - It does not allow for configuring where the databasi will be
+# - It does not allow for configuring where the database will be
 # - It does not allow for other milton.toml locations
 # - It does not follow the options in the milton.toml file (related to above)
-docker run -it --rm -v $HOME/.milton:/home/milton/.milton -v $HOME/.config/milton/:/home/milton/.config/milton/ mrhedmad/milton:$TAG
+# However, it works fine with defaults.
+docker run -it --rm -v $HOME/.milton:/root/milton/.milton -v $HOME/.config/milton/:/root/.config/milton/ mrhedmad/milton:$TAG
+

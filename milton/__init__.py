@@ -11,7 +11,7 @@ from milton.core.config import CONFIG
 
 __all__ = ["__version__", "CHANGELOG"]
 
-__version__ = "1.1.0-beta"
+__version__ = "1.1.0"
 
 # Setup logging
 log = logging.getLogger("milton")  # Keep this at the module level name
