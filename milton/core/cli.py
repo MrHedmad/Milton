@@ -2,6 +2,7 @@
 import logging
 from inspect import cleandoc
 from typing import Coroutine, Mapping, Optional
+import asyncio
 
 from discord.errors import HTTPException
 from discord.ext import commands
@@ -50,10 +51,13 @@ class CommandInterface(commands.Cog):
 
         self.add_option(self.help_option, trigger="help", desc="Print this list")
 
-        self.bot.loop.create_task(self.run())
+        self.task = self.bot.loop.create_task(self.run())
 
     def cog_unload(self):
-        self.run.cancel()
+        log.debug("Cancelling CLI Task...")
+        self.task.cancel()
+
+        raise asyncio.CancelledError()
 
     async def help_option(self) -> None:
         """Implement the default help message"""
@@ -84,12 +88,12 @@ class CommandInterface(commands.Cog):
     async def run(self) -> None:
         await self.bot.wait_until_ready()
         log.debug("Starting the CLI service")
-        while True:
+        async def cli_loop():
             with patch_stdout():
                 command = await self.session.prompt_async()
 
             if len(command) == 0:
-                continue
+                return
 
             log.debug(f'Got a CLI command, "{command}"')
             command = command.lower().split()
@@ -98,7 +102,7 @@ class CommandInterface(commands.Cog):
 
             if globbed is None:
                 print(f"Command `{command}` not recognized. Try `help`")
-                continue
+                return
 
             if globbed != command[0]:
                 print(f'Globbed from "{command[0]}" to "{globbed}".')
@@ -110,6 +114,9 @@ class CommandInterface(commands.Cog):
             except TypeError:
                 print(f"Wrong number of arguments given to {command[0]}")
 
+        while True:
+            await cli_loop()
+
 
 async def setup(bot):
     """Setup this extension."""
@@ -119,7 +126,10 @@ async def setup(bot):
     async def shutdown():
         """Gently shuts down the bot instance, cleaning up everything"""
         log.info("The CLI has told Milton to shutdown.")
-        await bot.close()
+        # This is a bit of a hack, but it's the only way I got it working.
+        # self.bot.close() shuts down only partially, possibly because the
+        # 'close' call is trying to close itself, if that makes sense.
+        raise KeyboardInterrupt()
 
     @interface.add_option
     async def flush_log():
